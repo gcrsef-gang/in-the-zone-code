@@ -1,0 +1,3 @@
+[submodule "in-the-zone-data"]
+	path = in-the-zone-data
+	url = https://github.com/gcrsef-gang/in-the-zone-data
