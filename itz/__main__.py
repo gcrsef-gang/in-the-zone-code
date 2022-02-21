@@ -68,8 +68,9 @@ if __name__ == "__main__":
     diagram_parser.set_defaults(func=itz.make_sem_diagram)
 
     fit_parser = subparsers.add_parser("fit")
-    fit_parser.add_argument("model", choices=["long-term", "short-term-with-emissions", "short-term-no-emissions"])
-    fit_parser.set_defaults(func=itz.fit)
+    fit_parser.add_argument("model", choices=["long-term", "short-term-with-emissions",
+                                              "short-term-no-emissions"])
+    fit_parser.set_defaults(func=lambda model: itz.fit(itz.get_description(model)))
 
     graph_parser = subparsers.add_parser("graph")
     graph_parser.add_argument("x", choices=itz.data.VAR_NAMES)
