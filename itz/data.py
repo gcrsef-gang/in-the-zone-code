@@ -1,12 +1,12 @@
 """Data parsing for the American Consumer Survey and NYC PLUTO databases.
 """
 
-
 # Whether ACS data uses 2000 census geo units instead of 2010
-OLD_BLOCKS = []  # List of bools
+OLD_BLOCKS = ()  # Tuple of bools
 ACS_PATH = ""
 PLUTO_PATH = ""
 
+VAR_NAMES = ()
 
 def get_data():
     """Creates DataFrame with columns corresponding to variables used in SEMs.

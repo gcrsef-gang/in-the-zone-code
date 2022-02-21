@@ -10,6 +10,6 @@ def fit(desc, data):
     """Fits an SEM to a dataset.
     """
 
-def evaluate(model, data):
+def _evaluate(model, data):
     """Returns evaluations of how well an SEM fits a dataset.
     """
