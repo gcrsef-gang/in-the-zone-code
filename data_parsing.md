@@ -26,14 +26,15 @@ Create a dictionary of census tracts to the lots they contain.
 
 #### Density columns
 
-Divide these by tract area (data source TBD)
-
+Find tract area with GEOID10 in ny_2010_census_tracts.json.
+Divide these by tract area. 
 - pop_density: DP05_0001E
 - resid_unit_density: DP04_0001E
 
+
 #### Others
 
-- multi_family_units: 100 - DP04_0007PE
+- % multi_family_units: 100 - DP04_0007PE
 - percent_car_commuters: (S0802_C02_001E + S0802_C03_001E) / S0802_C01_001E
 - percent_public_transport_commuters: S0802_C04_001E / S0802_C01_001E
 - percent_resid: % of lots in tract for which ResUnits > 0
@@ -41,13 +42,22 @@ Divide these by tract area (data source TBD)
 
 ### Name changes
 
-- DP04_0088PE: median_housing_price
-    - Not sure exactly what this is measuring. Description: "Percent!!VALUE!!Median (dollars)" - from ACS housing data
+- DP04_0088E: median_housing_price
+    - Not sure exactly what this is measuring. Description: 'Estimate!!VALUE!!Median (dollars)' - from ACS housing data
+    - This actually measures the median home value in the census tract. - Jam
 - S0802_C04_090E: mean_public_transport_travel_time
 - S0802_C03_090E: mean_car_travel_time
 - DP05_0072PE: percent_non_hispanic_or_latino_white_alone
-- DP03_0063M: mean_income
-
+- DP05_0073PE: percent_non_hispanic_black_alone
+- DP05_0066PE: percent_hispanic_any_race
+- DP05_0075PE: percent_non_hispanic_asian_alone
+- DP03_0062E: median_household_income
+- DP05_0017E: median_age
+- DP02_0013PE: percent_households_with_people_under_18
+- DP04_0001PE: percent_occupied_housing_units
+- DP04_0132E: median_gross_rent
+- DP02_0079PE: percent_of_households_in_same_house_year_ago
+- DP02_0067PE: percent_bachelor_degree_or_higher
 ## Delta conversions
 
 Create a new dataframe (assuming previous work was done with each year having a separate dataframe)
@@ -57,13 +67,28 @@ Convert each of these data columns into "d_"-prefixed columns as change measures
 
 Add a column for the 2011 values for these (prefix with orig_).
 
-mean_income, pop_density, percent_non_hispanic_or_latino_white_alone
+median_household_income, pop_density, percent_non_hispanic_or_latino_white_alone, percent_non_Hispanic_black_alone, percent_hispanic_any_race, percent_non_hispanic_asian_alone, percent_occupied_housing_units, median_age, 
+percent_households_with_people_undr_18, percent_of_households_in_same_house_year_ago, percent_bachelor_degree_or_higher
 
 ## More metrics
 
 ### % Upzoned
 
 For each tract:
-    calculate the percentage of lots in the tract for which MaxAllwFAR * LotArea has increased by more than 10% between the start and end years.
+    calculate the percentage of lots in the tract for which MaxAllwFAR/ResidFAR * LotArea has increased by more than 10% between the start and end years.
 
 Add as a column called percent_upzoned
+
+### Land Use Entropy 
+
+Captures the homogeneity/heterogeneity of the census tract - 0 represents a tract where every lot has the same land use,
+while 1 represents a tract where land uses are evenly split between lots. 
+
+Calculated as -1 * sum of p_j * ln(p_j) over all j, where j is the number of land uses and p_j is the proportion of lots
+with land use j. 
+
+### Percent of properties which are subsidized 
+
+For each lot in tract: 
+Check if in subsidized housing records in subsidized_properties.csv using BBL number. (i.e. if lot is subsidized and before 3/1/2011)
+Create variable orig_percent_of_subsidized_propeties. 
