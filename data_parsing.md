@@ -20,29 +20,41 @@ If a PLUTO year has 2000 tracts instead of 2010, map to 2010 using
 
 Create a dictionary of census tracts to the lots they contain.
 
-## Data columns (before delta conversions)
+## Lot data processing
 
-### Columns to add to data
+Filter by whether the lot is a residential lot using LandUse. 
+Create lot_df which tells us whether it's been upzoned, and the number of years since. 
+
+### Columns
+
+- MaxAllwFAR/ResidFAR
+- LotArea
+- ResUnits
+- LtdHeight
+- LandUse
+
+## Tract data processing (before delta conversions)
+
+Create one dataframe for each of the start/end years.
+
+### Columns not requiring lot data
 
 #### Density columns
 
 Find tract area with GEOID10 in ny_2010_census_tracts.json.
-Divide these by tract area. 
+Divide these by tract area (ALAND10). 
 - pop_density: DP05_0001E
 - resid_unit_density: DP04_0001E
 
-
 #### Others
 
-- % multi_family_units: 100 - DP04_0007PE
+- % multi_family_units: 100 - (DP04_0007PE+DP04_0008PE) (subtracting one unit attached/detached houses)
 - percent_car_commuters: (S0802_C02_001E + S0802_C03_001E) / S0802_C01_001E
 - percent_public_transport_commuters: S0802_C04_001E / S0802_C01_001E
-- percent_resid: % of lots in tract for which ResUnits > 0
-- percent_ltd_height: % of lots in tract for which LtdHeight is not just spaces
 
 ### Name changes
 
-- DP04_0088E: median_housing_price
+- DP04_0088E: median_home_value
     - Not sure exactly what this is measuring. Description: 'Estimate!!VALUE!!Median (dollars)' - from ACS housing data
     - This actually measures the median home value in the census tract. - Jam
 - S0802_C04_090E: mean_public_transport_travel_time
@@ -51,13 +63,19 @@ Divide these by tract area.
 - DP05_0073PE: percent_non_hispanic_black_alone
 - DP05_0066PE: percent_hispanic_any_race
 - DP05_0075PE: percent_non_hispanic_asian_alone
-- DP03_0062E: median_household_income
+- DP03_0088E: per_capita_income
 - DP05_0017E: median_age
 - DP02_0013PE: percent_households_with_people_under_18
-- DP04_0001PE: percent_occupied_housing_units
+- DP04_0002PE: percent_occupied_housing_units
 - DP04_0132E: median_gross_rent
 - DP02_0079PE: percent_of_households_in_same_house_year_ago
 - DP02_0067PE: percent_bachelor_degree_or_higher
+
+### Columns requiring lot data
+
+- percent_resid: % of lots in tract for which ResUnits > 0
+- percent_ltd_height: % of lots in tract for which LtdHeight is not just spaces
+
 ## Delta conversions
 
 Create a new dataframe (assuming previous work was done with each year having a separate dataframe)
@@ -67,7 +85,7 @@ Convert each of these data columns into "d_"-prefixed columns as change measures
 
 Add a column for the 2011 values for these (prefix with orig_).
 
-median_household_income, pop_density, percent_non_hispanic_or_latino_white_alone, percent_non_Hispanic_black_alone, percent_hispanic_any_race, percent_non_hispanic_asian_alone, percent_occupied_housing_units, median_age, 
+per_capita_income, pop_density, percent_non_hispanic_or_latino_white_alone, percent_non_Hispanic_black_alone, percent_hispanic_any_race, percent_non_hispanic_asian_alone, percent_occupied_housing_units, median_age, 
 percent_households_with_people_undr_18, percent_of_households_in_same_house_year_ago, percent_bachelor_degree_or_higher
 
 ## More metrics
@@ -91,4 +109,8 @@ with land use j.
 
 For each lot in tract: 
 Check if in subsidized housing records in subsidized_properties.csv using BBL number. (i.e. if lot is subsidized and before 3/1/2011)
-Create variable orig_percent_of_subsidized_propeties. 
+Create variable orig_percent_subsidized_properties. 
+
+### Average # of years since upzoned
+
+Average for each of the lots in the tract, set to 0 if no upzoning occurred.
