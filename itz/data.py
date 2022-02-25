@@ -20,7 +20,39 @@ CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ("2011_2019_percent_upzoned", "2016_2019_percent_upzoned")  # TODO: fill this in (necessary for visualization scripts)
+VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
+       '2016_2019_percent_upzoned', '2011_2016_average_years_since_upzoning',
+       '2011_2019_average_years_since_upzoning',
+       '2016_2019_average_years_since_upzoning', 'd_2011_2016_resid_units',
+       'd_2011_2019_resid_units', 'd_2016_2019_resid_units',
+       'orig_percent_residential', 'orig_percent_limited_height',
+       'orig_percent_mixed_development', 'orig_percent_subsidized_properties',
+       'd_2011_2019_pop_density', 'd_2011_2019_resid_unit_density',
+       'd_2011_2019_per_capita_income',
+       'd_2011_2019_percent_non_hispanic_or_latino_white_alone',
+       'd_2011_2019_percent_non_hispanic_black_alone',
+       'd_2011_2019_percent_hispanic_any_race',
+       'd_2011_2019_percent_non_hispanic_asian_alone',
+       'd_2011_2019_percent_multi_family_units',
+       'd_2011_2019_percent_occupied_housing_units',
+       'd_2011_2019_median_gross_rent', 'd_2011_2019_median_home_value',
+       'd_2011_2019_percent_households_with_people_under_18',
+       'd_2011_2019_percent_of_households_in_same_house_year_ago',
+       'd_2011_2019_percent_bachelor_degree_or_higher',
+       'd_2011_2019_percent_car_commuters',
+       'd_2011_2019_percent_public_transport_commuters',
+       'd_2011_2019_mean_public_transport_travel_time',
+       'd_2011_2019_mean_car_travel_time', 'pop_density',
+       'percent_non_hispanic_or_latino_white_alone',
+       'percent_non_hispanic_black_alone', 'percent_hispanic_any_race',
+       'percent_non_hispanic_asian_alone', 'median_age', 'per_capita_income',
+       'resid_unit_density', 'percent_multi_family_units',
+       'percent_occupied_housing_units', 'median_gross_rent',
+       'median_home_value', 'percent_households_with_people_under_18',
+       'percent_of_households_in_same_house_year_ago',
+       'percent_bachelor_degree_or_higher', 'percent_car_commuters',
+       'percent_public_transport_commuters',
+       'mean_public_transport_travel_time', 'mean_car_travel_time')
 
 # DELTAS = [(2011, 2019), (2011, 2016), (2016, 2019)]
 DELTAS = [("2011", "2019")]
