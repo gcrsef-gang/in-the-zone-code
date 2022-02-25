@@ -20,7 +20,7 @@ CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
+VAR_NAMES = ('Unnamed: 0', '2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
        '2016_2019_percent_upzoned', '2011_2016_average_years_since_upzoning',
        '2011_2019_average_years_since_upzoning',
        '2016_2019_average_years_since_upzoning', 'd_2011_2016_resid_units',
@@ -42,17 +42,20 @@ VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
        'd_2011_2019_percent_car_commuters',
        'd_2011_2019_percent_public_transport_commuters',
        'd_2011_2019_mean_public_transport_travel_time',
-       'd_2011_2019_mean_car_travel_time', 'pop_density',
-       'percent_non_hispanic_or_latino_white_alone',
-       'percent_non_hispanic_black_alone', 'percent_hispanic_any_race',
-       'percent_non_hispanic_asian_alone', 'median_age', 'per_capita_income',
-       'resid_unit_density', 'percent_multi_family_units',
-       'percent_occupied_housing_units', 'median_gross_rent',
-       'median_home_value', 'percent_households_with_people_under_18',
-       'percent_of_households_in_same_house_year_ago',
-       'percent_bachelor_degree_or_higher', 'percent_car_commuters',
-       'percent_public_transport_commuters',
-       'mean_public_transport_travel_time', 'mean_car_travel_time')
+       'd_2011_2019_mean_car_travel_time', 'orig_pop_density',
+       'orig_percent_non_hispanic_or_latino_white_alone',
+       'orig_percent_non_hispanic_black_alone',
+       'orig_percent_hispanic_any_race',
+       'orig_percent_non_hispanic_asian_alone', 'orig_median_age',
+       'orig_per_capita_income', 'orig_resid_unit_density',
+       'orig_percent_multi_family_units',
+       'orig_percent_occupied_housing_units', 'orig_median_gross_rent',
+       'orig_median_home_value',
+       'orig_percent_households_with_people_under_18',
+       'orig_percent_of_households_in_same_house_year_ago',
+       'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters',
+       'orig_percent_public_transport_commuters',
+       'orig_mean_public_transport_travel_time', 'orig_mean_car_travel_time')
 
 # DELTAS = [(2011, 2019), (2011, 2016), (2016, 2019)]
 DELTAS = [("2011", "2019")]
@@ -160,7 +163,7 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
     columns = {}
     for column in tract_dfs[0].columns:
         columns[column] = "orig_" + column
-    tract_dfs[0].rename(columns, inplace=True)
+    tract_dfs[0].rename(mapper=columns, axis="columns", inplace=True)
     model_df = pd.concat([tract_lot_data, tract_deltas, tract_dfs[0]], axis=1)
     if verbose:
         print("Done!")
