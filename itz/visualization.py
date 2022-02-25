@@ -1,57 +1,57 @@
 """Various visualization functions.
 """
 
-# import semopy
-
 import folium
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import semopy
+
+from .model import ModelName
 
 
-
-
-def make_sem_diagram(model, path):
+def make_sem_diagram(model_name: ModelName, path: str):
     """Saves a diagram of an SEM to a PNG image.
-
-    Model options:
-    - long-term
-    - short-term-with-emissions
-    - short-term-no-emissions
     """
     # semplot()
 
 
-def make_regression_plot(x, y, path):
+def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str):
     """Creates a scatterplot with LSRL and returns descriptive statistics as a dictionary.
     """
-    fit, stats = np.polyfit(x, y, 1)
+    X = data[x]
+    Y = data[y]
+
+    fit, stats = np.polyfit(X, Y, 1)
     
-    plt.plot(x, (m * np.asarray(x) + b), '-r')
-    plt.scatter(x, y)
+    plt.plot(X, (fit[0] * np.asarray(X) + fit[1]), '-r')
+    plt.scatter(X, Y)
     plt.savefig(path)
 
 
 
-def make_residual_plot(x, y, path):
+def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str):
     """Creates a residual plot for a least-squares linear regression and returns descriptive
     statistics as a dictionary.
     """
-    coef = np.polyfit(x, y, 1)
+    X = data[x]
+    Y = data[y]
+
+    coef = np.polyfit(X, Y, 1)
     fn = np.poly1d(coef)
 
-    plt.plot(x, np.array([0] * len(x)), '-r')
-    plt.scatter(x, y - fn(x))
+    plt.plot(X, np.array([0] * len(X)), '-r')
+    plt.scatter(X, Y - fn(X))
 
     plt.savefig(path)
 
 
 
-def make_histogram(x, path):
+def make_histogram(x: str, data: pd.DataFrame, path: str):
     """"Creates a histogram and returns descriptive statistics as a dictionary.
     """
-    plt.hist(x)
+    plt.hist(data[x])
     plt.savefig(path)
-    
 
 
 def make_map_vis(geoset, values, path):

@@ -3,11 +3,9 @@
 
 import json
 from tracemalloc import start
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
-
-from itz.model import ModelName
 
 
 ACS_DEMOGRAPHIC_PATH = "in-the-zone-data/acs/nyc-demographic-data-%s.csv"
@@ -20,8 +18,9 @@ PLUTO_TEXT_PATH = "in-the-zone-data/zoning-data/mergedPLUTO-%s.txt"
 TRACT_DICT_PATH = "in-the-zone-data/2000-to-2010-census-blocks-tracts.txt"
 CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
+TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ()
+VAR_NAMES = ("2011_2019_percent_upzoned", "2016_2019_percent_upzoned")  # TODO: fill this in (necessary for visualization scripts)
 
 # DELTAS = [(2011, 2019), (2011, 2016), (2016, 2019)]
 DELTAS = [("2011", "2019")]
@@ -46,23 +45,48 @@ COUNTY_TO_CODE = {
     "SI": "085"
 }
 
-def get_data() -> pd.DataFrame:
+def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
+             verbose=False) -> Tuple[pd.DataFrame, List[pd.DataFrame], pd.DataFrame]:
     """Creates DataFrame with columns corresponding to variables used in the SEM models.
+
+    Parameters
+    ----------
+    lot_data (optional): pd.DataFrame
+        Pre-parsed DataFrame containing lot-related data.
+    tract_data (optional): List of pd.DataFrame
+        Pre-parsed DataFrame containing tract-related data.
+    verbose (optional): bool
+        Whether to print status as the function executes.
+
+    Returns
+    -------
+    Tuple
+        Lot data DF, tract data DFs, and a combined DF for use with semopy models.
     """
-    # Load tract data. 
-    # tract_dfs = _get_tract_data()
-    # print("Tract data collected!")
-    # tract_dfs[0].to_csv("tract_data0.csv")
-    # tract_dfs[1].to_csv("tract_data1.csv")
-    tract_df_0 = pd.read_csv("tract_data0.csv", index_col="ITZ_GEOID")
-    tract_df_1 = pd.read_csv("tract_data1.csv", index_col="ITZ_GEOID")
-    tract_dfs = [tract_df_0, tract_df_1]
+    # Load/parse tract data.
+    if verbose:
+        print("Collecting tract data... ", end="")
+    tract_dfs = []
+    if len(tract_data) == 0:
+        tract_dfs = _get_tract_data()
+        if verbose:
+            print("Done!")
+    else:
+        tract_dfs = tract_data
+        if verbose:
+            print("Using provided.")
 
     # Load lot data. 
-    # lot_df = _get_lot_data()
-    # print("Lot data collected!")
-    lot_df = pd.read_csv("lot_data.csv")
-    # lot_df.to_csv("lot_data.csv")
+    if verbose:
+        print("Collecting lot data... ", end="")
+    if lot_data is None:
+        lot_df = _get_lot_data()
+        if verbose:
+            print("Done!")
+    else:
+        lot_df = lot_data
+        if verbose:
+            print("Using provided.")
 
     # Create dictionary which holds all lot BBL numbers corresponding to each tract ITZ_GEOID. 
     # tracts_to_lots = {}
@@ -73,8 +97,8 @@ def get_data() -> pd.DataFrame:
     # print("Tracts to lots created!")
     # with open("tract_to_lot_list.txt", "w") as f:
     #     f.write(str(tracts_to_lots))
-    with open("tract_to_lot_list.txt", "r") as f:
-        tracts_to_lots = eval(f.read())
+    with open(TRACTS_TO_LOTS_PATH, "r") as f:
+        tracts_to_lots = json.load(f)
 
     # Delete tracts without lots.  
     tracts_to_delete = []
@@ -83,26 +107,36 @@ def get_data() -> pd.DataFrame:
             tracts_to_delete.append(tract)
     for tract in tracts_to_delete:
         del tracts_to_lots[tract]
-    # model_df = pd.DataFrame(index=tract_dfs["ITZ_GEOID"])
 
-    # Combine tract and lot data. 
+    # Combine tract and lot data.
+    if verbose:
+        print("Producing lot-based data for tracts... ", end="") 
     tract_lot_data = _get_tract_lot_data(lot_df, tracts_to_lots)
-    print("Tract lot data collected!")
+    if verbose:
+        print("Done!")
 
     # Find Tract delta data. 
+    if verbose:
+        print("Calculating deltas between starting and ending tract data... ", end="")
     tract_deltas = _get_delta_data(tract_dfs, tracts_to_lots.keys())
-    print("Tract delta data collected!")
+    if verbose:
+        print("Done!")
 
     # Combine dataframes to create final model data. 
+    if verbose:
+        print("Combining data sources... ", end="")
     columns = {}
     for column in tract_dfs[0].columns:
-        columns[column] = "orig_"+column
+        columns[column] = "orig_" + column
     tract_dfs[0].rename(columns, inplace=True)
     model_df = pd.concat([tract_lot_data, tract_deltas, tract_dfs[0]], axis=1)
-    print(model_df["pop_density"])
-    model_df.to_csv("itz-data.csv")
-    print("Model data saved.")
-    
+    if verbose:
+        print("Done!")
+    return lot_df, tract_dfs, model_df
+
+
+# TODO: Add verbosity options to these functions.
+
 
 def _get_tract_data() -> List[pd.DataFrame]:
     """Returns a list of two DataFrames with columns not requiring lot data.
@@ -429,9 +463,9 @@ def _get_lot_data() -> pd.DataFrame:
         except KeyError:
             lot_df["mixed_development" + year] = pluto_df["LandUse"] == "4"
         try:
-            lot_df["limited_height" + year] = pluto_df["ltdheight"].strip() != ''
+            lot_df["limited_height" + year] = pluto_df["ltdheight"].str.strip() != ''
         except KeyError:
-            lot_df["limited_height" + year] = pluto_df["LtdHeight"].strip() != ''
+            lot_df["limited_height" + year] = pluto_df["LtdHeight"].str.strip() != ''
         try:
             lot_df["resid_units" + year] = pluto_df["unitsres"]
         except KeyError:
@@ -474,18 +508,18 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
         residential_units_end = 0
         for tract, lot_list in tracts_to_lots.items():
             for lot in lot_list:
-                prev = lot_df.at[lot, "max_resid_far"+str(start)]*lot_df.at[lot, "lot_area"]
+                prev = float(lot_df.at[lot, "max_resid_far"+str(start)])*lot_df.at[lot, "lot_area"]
                 # for year in range(start+1, end+1):
                 for year in [2011, 2019]:
-                    curr = lot_df.at[lot, "max_resid_far"+str(year)]*lot_df.at[lot, "lot_area"]
-                    if curr/prev > 1.1 and prev != 0:
+                    curr = float(lot_df.at[lot, "max_resid_far"+str(year)])*lot_df.at[lot, "lot_area"]
+                    if prev != 0 and curr/prev > 1.1:
                         upzoned += 1
                         years_since_upzoned.append(int(end)-int(year))
                         break
                     prev = curr
                 try:
-                    residential_units_start += lot_df.at[lot, "resid_units"+str(start)]
-                    residential_units_end += lot_df.at[lot, "resid_units"+str(end)]
+                    residential_units_start += float(lot_df.at[lot, "resid_units"+str(start)])
+                    residential_units_end += float(lot_df.at[lot, "resid_units"+str(end)])
                 except ValueError:
                     continue
             try:
