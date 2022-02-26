@@ -6,6 +6,8 @@ from tracemalloc import start
 from typing import List
 
 import pandas as pd
+import numpy as np
+import math
 
 from itz.model import ModelName
 
@@ -23,15 +25,12 @@ SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 
 VAR_NAMES = ()
 
-# DELTAS = [(2011, 2019), (2011, 2016), (2016, 2019)]
-DELTAS = [("2011", "2019")]
+DELTAS = [("2011", "2019"), ("2011", "2016"), ("2016", "2019")]
 
-# TRACT_DATA_YEARS = ["2011", "2016", "2019"]
-TRACT_DATA_YEARS = ["2011", "2019"]
-# LOT_DATA_YEARS = [str(year) for year in range(2011, 2020)]
-LOT_DATA_YEARS = ["2011", "2019"]
+TRACT_DATA_YEARS = ["2011", "2016", "2019"]
+LOT_DATA_YEARS = [str(year) for year in range(2011, 2020)]
 
-COUNTY_CODES = {
+CODE_TO_COUNTY = {
     "005": "BX",
     "047": "BK",
     "061": "MN",
@@ -50,29 +49,47 @@ def get_data() -> pd.DataFrame:
     """Creates DataFrame with columns corresponding to variables used in the SEM models.
     """
     # Load tract data. 
-    # tract_dfs = _get_tract_data()
-    # print("Tract data collected!")
+    tract_dfs = _get_tract_data()
+    print("Tract data collected!")
+
+    for tract_df in tract_dfs:
+        tract_df = tract_df[tract_df["median_gross_rent"].notnull()]
+        tract_df = tract_df[tract_df["median_home_value"].notnull()]
+    tract_dfs[0] = tract_dfs[0].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
+    tract_dfs[1] = tract_dfs[1].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
+    tract_dfs[2] = tract_dfs[2].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
+
     # tract_dfs[0].to_csv("tract_data0.csv")
     # tract_dfs[1].to_csv("tract_data1.csv")
-    tract_df_0 = pd.read_csv("tract_data0.csv", index_col="ITZ_GEOID")
-    tract_df_1 = pd.read_csv("tract_data1.csv", index_col="ITZ_GEOID")
-    tract_dfs = [tract_df_0, tract_df_1]
+    # tract_dfs[2].to_csv("tract_data2.csv")
+
+    # For loading data from existing files. 
+    # tract_df_0 = pd.read_csv("tract_data0.csv", index_col="ITZ_GEOID")
+    # tract_df_1 = pd.read_csv("tract_data1.csv", index_col="ITZ_GEOID")
+    # tract_df_2 = pd.read_csv("tract_data2.csv", index_col="ITZ_GEOID")
+    # tract_dfs = [tract_df_0, tract_df_1, tract_df_2]
 
     # Load lot data. 
-    # lot_df = _get_lot_data()
-    # print("Lot data collected!")
-    lot_df = pd.read_csv("lot_data.csv")
+    lot_df = _get_lot_data()
+    print("Lot data collected!")
     # lot_df.to_csv("lot_data.csv")
 
+    # For loading data from an existing file. 
+    lot_df = pd.read_csv("lot_data.csv", dtype=str)
+    lot_df.set_index("BBL", inplace=True)
+
+
     # Create dictionary which holds all lot BBL numbers corresponding to each tract ITZ_GEOID. 
-    # tracts_to_lots = {}
-    # for value in tract_dfs[0].index:
-    #     tracts_to_lots[value] = []
-    # for index, row in lot_df.iterrows():
-    #     tracts_to_lots[row["ITZ_GEOID"]].append(index)
-    # print("Tracts to lots created!")
-    # with open("tract_to_lot_list.txt", "w") as f:
-    #     f.write(str(tracts_to_lots))
+    tracts_to_lots = {}
+    for value in tract_dfs[0].index:
+        tracts_to_lots[value] = []
+    for index, row in lot_df.iterrows():
+        tracts_to_lots[row["ITZ_GEOID"]].append(index)
+    print("Tracts to lots created!")
+    with open("tract_to_lot_list.txt", "w") as f:
+        f.write(str(tracts_to_lots))
+
+    # Load an existing created dictionary.
     with open("tract_to_lot_list.txt", "r") as f:
         tracts_to_lots = eval(f.read())
 
@@ -93,13 +110,15 @@ def get_data() -> pd.DataFrame:
     tract_deltas = _get_delta_data(tract_dfs, tracts_to_lots.keys())
     print("Tract delta data collected!")
 
-    # Combine dataframes to create final model data. 
+    # Add "orig_" to the beginning of columns for 2011 data. 
     columns = {}
     for column in tract_dfs[0].columns:
         columns[column] = "orig_"+column
-    tract_dfs[0].rename(columns, inplace=True)
+    tract_dfs[0].rename(columns=columns, inplace=True)
+
+    # Combine dataframes to create final model data. 
     model_df = pd.concat([tract_lot_data, tract_deltas, tract_dfs[0]], axis=1)
-    print(model_df["pop_density"])
+
     model_df.to_csv("itz-data.csv")
     print("Model data saved.")
     
@@ -118,104 +137,224 @@ def _get_tract_data() -> List[pd.DataFrame]:
     tract_area_df.sort_index(inplace=True)
     # Add data row-by-row.
     for tract in geodata["features"]:
-        if tract["properties"]["COUNTYFP10"] in COUNTY_CODES.keys():
-            tract_area_df.loc[COUNTY_CODES[tract["properties"]["COUNTYFP10"]] + tract["properties"]["NAME10"]] = \
+        if tract["properties"]["COUNTYFP10"] in CODE_TO_COUNTY.keys():
+            tract_area_df.loc[CODE_TO_COUNTY[tract["properties"]["COUNTYFP10"]] + tract["properties"]["NAME10"]] = \
              tract["properties"]["ALAND10"]
-    print(tract_area_df)
-    # tract_area_df.sort_index(0)
+
     print("Tract area data collected")
 
     for year in TRACT_DATA_YEARS:
+        print(year, "TRACT_YEAR")
+        # Create tract dataframe to store data in. 
         tract_df = pd.DataFrame(index=tract_area_df.index)
         tract_df.index.rename('ITZ_GEOID', inplace=True)
 
+        # Load ACS demographic data. 
         demographic = pd.read_csv(ACS_DEMOGRAPHIC_PATH % year, skiprows=[1], na_values=["(X)", "-", "**"])
+        # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(demographic)
         demographic.set_index("ITZ_GEOID", inplace=True)
         demographic.sort_index(inplace=True)
-        print(demographic)
-        print(demographic.columns)
-        tract_df["pop_density"] = demographic["DP05_0001E"].astype(float)
-        tract_df["percent_non_hispanic_or_latino_white_alone"] = demographic["DP05_0072PE"].astype(float)
-        tract_df["percent_non_hispanic_black_alone"] = demographic["DP05_0073PE"].astype(float)
-        tract_df["percent_hispanic_any_race"] = demographic["DP05_0066PE"].astype(float)
-        tract_df["percent_non_hispanic_asian_alone"] = demographic["DP05_0075PE"].astype(float)
-        tract_df["median_age"] = demographic["DP05_0017E"].astype(float)
+        # Load dictionary which maps ACS codes to columns
+        with open("in-the-zone-data/acs/code-to-column-demographic-data-"+str(year)+".txt", "r") as f:
+            code_to_column = eval(f.read())
+
+        if year == "2011":
+            tract_df["pop_density"] = demographic[code_to_column['Estimate!!SEX AND AGE!!Total population']].astype(float)
+            tract_df["percent_non_hispanic_or_latino_white_alone"] = demographic[code_to_column['Percent!!RACE!!One race!!White']].astype(float)
+            tract_df["percent_non_hispanic_black_alone"] = demographic[code_to_column['Percent!!RACE!!One race!!Black or African American']].astype(float)
+            tract_df["percent_hispanic_any_race"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Hispanic or Latino (of any race)']].astype(float)
+            tract_df["percent_non_hispanic_asian_alone"] = demographic[code_to_column['Percent!!RACE!!One race!!Asian']].astype(float)
+            tract_df["median_age"] = demographic[code_to_column['Estimate!!SEX AND AGE!!Median age (years)']].astype(float)
+        elif year == "2019":
+            tract_df["pop_density"] = demographic[code_to_column['Estimate!!SEX AND AGE!!Total population']].astype(float)
+            tract_df["percent_non_hispanic_or_latino_white_alone"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!White alone']].astype(float)
+            tract_df["percent_non_hispanic_black_alone"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!Black or African American alone']].astype(float)
+            tract_df["percent_hispanic_any_race"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Hispanic or Latino (of any race)']].astype(float)
+            tract_df["percent_non_hispanic_asian_alone"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!Asian alone']].astype(float)
+            tract_df["median_age"] = demographic[code_to_column['Estimate!!SEX AND AGE!!Total population!!Median age (years)']].astype(float)
+        else:
+            tract_df["pop_density"] = demographic[code_to_column['Estimate!!SEX AND AGE!!Total population']].astype(float)
+            tract_df["percent_non_hispanic_or_latino_white_alone"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!White alone']].astype(float)
+            tract_df["percent_non_hispanic_black_alone"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!Black or African American alone']].astype(float)
+            tract_df["percent_hispanic_any_race"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Hispanic or Latino (of any race)']].astype(float)
+            tract_df["percent_non_hispanic_asian_alone"] = demographic[code_to_column['Percent!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!Asian alone']].astype(float)
+            tract_df["median_age"] = demographic[code_to_column['Estimate!!SEX AND AGE!!Median age (years)']].astype(float)
+
         del demographic
-        print(tract_df)
-        print(tract_df["pop_density"]["SI20.01"])
+
         print("Tract demographic data collected")
 
+        # Load ACS economic data.  
+        # Some tracts randomly have their value for per_capita_income set to 'N' even though that's not reflected in the data
         economic = pd.read_csv(ACS_ECONOMIC_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "N"])
+        # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(economic)
         economic.set_index("ITZ_GEOID", inplace=True)
         economic.sort_index(inplace=True)
-        # Some tracts randomly have their value set to 'N' even though that's not reflected in the data
-        tract_df["per_capita_income"] = economic["DP03_0088E"].astype(float)
+        # Load dictionary which maps ACS codes to columns
+        with open("in-the-zone-data/acs/code-to-column-economic-data-"+str(year)+".txt", "r") as f:
+            code_to_column = eval(f.read())
+        tract_df["per_capita_income"] = economic[code_to_column['Estimate!!INCOME AND BENEFITS (IN '+ year +' INFLATION-ADJUSTED DOLLARS)!!Per capita income (dollars)']].astype(float)
+        
         del economic
 
         print("Tract economic data collected")
 
-        housing = pd.read_csv(ACS_HOUSING_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "2,000+", "1,000,000+"])
+        # Load ACS housing data.  
+        housing = pd.read_csv(ACS_HOUSING_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "2,000+", "3,500+", "1,000,000+", "10,000-", "2,000,000+"])
+        # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(housing)
         housing.set_index("ITZ_GEOID", inplace=True)
         housing.sort_index(inplace=True)
-        tract_df["resid_unit_density"] = housing["DP04_0001E"].astype(float)
-        tract_df["percent_multi_family_units"] = 100 - housing["DP04_0007PE"].astype(float) - housing["DP04_0008PE"].astype(float)
-        tract_df["percent_occupied_housing_units"] = housing["DP04_0002PE"].astype(float)
-        # 86 tracts have gross rent = '2000+'
-        # print(housing["GEO_ID"][housing["DP04_0132E"] == "2,000+"])
-        tract_df["median_gross_rent"] = housing["DP04_0132E"].astype(float)
-        # 110 tracts have median house value = '1,000,000+'
-        # print(housing["GEO_ID"][housing["DP04_0088E"] == "1,000,000+"])
-        tract_df["median_home_value"] = housing["DP04_0088E"].astype(float)
+        # Load dictionary which maps ACS codes to columns
+        with open("in-the-zone-data/acs/code-to-column-housing-data-"+str(year)+".txt", "r") as f:
+            code_to_column = eval(f.read())
+        if year == "2011":
+            tract_df["resid_unit_density"] = housing[code_to_column['Estimate!!HOUSING OCCUPANCY!!Total housing units']].astype(float)
+            tract_df["percent_multi_family_units"] = 100  \
+                - housing[code_to_column['Percent!!UNITS IN STRUCTURE!!1-unit, detached']].astype(float) \
+                - housing[code_to_column["Percent!!UNITS IN STRUCTURE!!1-unit, attached"]].astype(float)
+            tract_df["percent_occupied_housing_units"] = housing[code_to_column['Percent!!HOUSING OCCUPANCY!!Occupied housing units']].astype(float)
+            # 86 tracts have gross rent = '2000+', these are filtered out later
+            tract_df["median_gross_rent"] = housing[code_to_column['Estimate!!GROSS RENT!!Median (dollars)']].astype(float)
+            # 110 tracts have median house value = '1,000,000+', these are filtered out later
+            tract_df["median_home_value"] = housing[code_to_column['Estimate!!VALUE!!Median (dollars)']].astype(float)
+        else:
+            tract_df["resid_unit_density"] = housing[code_to_column['Estimate!!HOUSING OCCUPANCY!!Total housing units']].astype(float)
+            tract_df["percent_multi_family_units"] = 100  \
+                - housing[code_to_column['Percent!!UNITS IN STRUCTURE!!Total housing units!!1-unit, detached']].astype(float) \
+                - housing[code_to_column['Percent!!UNITS IN STRUCTURE!!Total housing units!!1-unit, attached']].astype(float)
+            tract_df["percent_occupied_housing_units"] = housing[code_to_column['Percent!!HOUSING OCCUPANCY!!Total housing units!!Occupied housing units']].astype(float)
+            # 86 tracts have gross rent = '2000+', these are filtered out later
+            tract_df["median_gross_rent"] = housing[code_to_column['Estimate!!GROSS RENT!!Occupied units paying rent!!Median (dollars)']].astype(float)
+            # 110 tracts have median house value = '1,000,000+', these are filtered out later
+            tract_df["median_home_value"] = housing[code_to_column['Estimate!!VALUE!!Owner-occupied units!!Median (dollars)']].astype(float)
+
         del housing
 
         print("Tract housing data collected")
 
+        # Load ACS social data.  
         social = pd.read_csv(ACS_SOCIAL_PATH % year, skiprows=[1], na_values=["(X)", "-", "**"])
+        # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(social)
         social.set_index("ITZ_GEOID", inplace=True)
         social.sort_index(inplace=True)
-        tract_df["percent_households_with_people_under_18"] = social["DP02_0013PE"].astype(float)
-        tract_df["percent_of_households_in_same_house_year_ago"] = social["DP02_0079PE"].astype(float)
-        tract_df["percent_bachelor_degree_or_higher"] = social["DP02_0067PE"].astype(float)
+        # Load dictionary which maps ACS codes to columns
+        with open("in-the-zone-data/acs/code-to-column-social-data-"+str(year)+".txt", "r") as f:
+            code_to_column = eval(f.read())
+        if year == "2011":
+            tract_df["percent_households_with_people_under_18"] = social[code_to_column['Percent!!HOUSEHOLDS BY TYPE!!Households with one or more people under 18 years']].astype(float)
+            tract_df["percent_of_households_in_same_house_year_ago"] = social[code_to_column['Percent!!RESIDENCE 1 YEAR AGO!!Same house']].astype(float)
+            tract_df["percent_bachelor_degree_or_higher"] = social[code_to_column["Percent!!EDUCATIONAL ATTAINMENT!!Percent bachelor's degree or higher"]].astype(float)
+        elif year == "2019":
+            tract_df["percent_households_with_people_under_18"] = social[code_to_column['Percent!!HOUSEHOLDS BY TYPE!!Total households!!Households with one or more people under 18 years']].astype(float)
+            tract_df["percent_of_households_in_same_house_year_ago"] = social[code_to_column['Percent!!RESIDENCE 1 YEAR AGO!!Population 1 year and over!!Same house']].astype(float)
+            tract_df["percent_bachelor_degree_or_higher"] = social[code_to_column["Percent!!EDUCATIONAL ATTAINMENT!!Population 25 years and over!!Bachelor's degree or higher"]].astype(float)
+        else:
+            tract_df["percent_households_with_people_under_18"] = social[code_to_column['Percent!!HOUSEHOLDS BY TYPE!!Households with one or more people under 18 years']].astype(float)
+            tract_df["percent_of_households_in_same_house_year_ago"] = social[code_to_column['Percent!!RESIDENCE 1 YEAR AGO!!Population 1 year and over!!Same house']].astype(float)
+            tract_df["percent_bachelor_degree_or_higher"] = social[code_to_column["Percent!!EDUCATIONAL ATTAINMENT!!Percent bachelor's degree or higher"]].astype(float)
+
         del social
 
         print("Tract social data collected")
 
+        # Load ACS transportation data.  
         transportation = pd.read_csv(ACS_TRANSPORTATION_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "N"])
+        # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(transportation)
         transportation.set_index("ITZ_GEOID", inplace=True)
         transportation.sort_index(inplace=True)
-        tract_df["percent_car_commuters"] = \
-            (transportation["S0802_C02_001E"].astype(float) + transportation["S0802_C03_001E"].astype(float)) \
-          / transportation["S0802_C01_001E"].astype(float)
-        tract_df["percent_public_transport_commuters"] = transportation["S0802_C04_001E"] \
-                                                       / transportation["S0802_C01_001E"]
-        # TODO: find a fix for the fact that 1800 blocks have no value for travel times, and percentages are highly unreliable
-        # print(transportation["GEO_ID"][transportation["S0802_C01_090E"] == "N"])
-        tract_df["mean_public_transport_travel_time"] = transportation["S0802_C04_090E"].astype(float)
-        tract_df["mean_car_travel_time"] = transportation["S0802_C03_090E"].astype(float)
-        # _add_tract_ids(transportation)
-        # tract_df["ITZ_GEOID"] = transportation["ITZ_GEOID"]
+        # Load dictionary which maps ACS codes to columns
+        with open("in-the-zone-data/acs/code-to-column-transportation-data-"+str(year)+".txt", "r") as f:
+            code_to_column = eval(f.read())
+        if year == "2019":
+            tract_df["percent_car_commuters"] = 100 * \
+                (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over']].astype(float) + transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over']].astype(float)) \
+                / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']].astype(float)
 
-        # tract_df.set_index("ITZ_GEOID", inplace=True)
+            tract_df["percent_public_transport_commuters"] = 100 * \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over']] \
+                / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']]
 
-        print(tract_df)
-        print(tract_df.index)
+            tract_df["percent_public_transport_trips_under_45_min"] = 100 * \
+                (transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!20 to 24 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
+                / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
+            
+            tract_df["percent_car_trips_under_45_min"] = 100 * \
+                (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!20 to 24 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)+ \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!20 to 24 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
+                / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
+                 transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
+        else:
+            tract_df["percent_car_commuters"] = 100 * \
+                (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over']].astype(float)) \
+                / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']].astype(float)
+
+            tract_df["percent_public_transport_commuters"] = 100 * \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over']] \
+                / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']]
+
+            tract_df["percent_public_transport_trips_under_45_min"] = 100 * \
+                (transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!20 to 24 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
+                / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
+            
+            tract_df["percent_car_trips_under_45_min"] = 100 * \
+                (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
+                transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!25 to 29 minutes"]].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!20 to 24 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)+ \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!20 to 24 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
+                transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
+                / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
+                 transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
+
+        del transportation
+
         # Divide all density columns by tract area. 
         for tract_id in tract_area_df.index:
             tract_area = tract_area_df.at[tract_id, "area"]
             tract_df["pop_density"][tract_id] /= tract_area
-            # tract_df["pop_density"][tract_df.loc[tract_df["ITZ_GEOID"] == tract_id]] /= tract_area
             tract_df["resid_unit_density"][tract_id] /= tract_area
-            # tract_df["resid_unit_density"][tract_df.loc[tract_df["ITZ_GEOID"] == tract_id]] /= tract_area
-
-        del transportation
 
         print("Tract transportation data collected")
 
+        # Append the tract_df for this year to the list of all tract_dfs. 
         tract_dfs.append(tract_df)
 
     return tract_dfs
@@ -223,24 +362,17 @@ def _get_tract_data() -> List[pd.DataFrame]:
 def _add_tract_ids(tract_df: pd.DataFrame):
     """Adds an "ITZ_GEOID" column to the data combining the borough and census tract number.
     """
+    # Different possibilities for GEOID. 
     try:
-        # print(tract_df["GEOID10"].str.slice(start=11, stop=14))
         itz_geoids = []
         for _, row in tract_df.iterrows():
             geoid = row["GEOID10"]
-            if geoid[-1] != '0':
-                itz_geoids.append(COUNTY_CODES[geoid[11:14]] + row["NAME"][13:row["NAME"].find(",")])
-            else:
-                itz_geoids.append(COUNTY_CODES[geoid[11:14]] + row["NAME"][13:row["NAME"].find(",")])
+            itz_geoids.append(CODE_TO_COUNTY[geoid[11:14]] + row["NAME"][13:row["NAME"].find(",")])
     except:
-        # print(tract_df["GEO_ID"].str.slice(start=11, stop=14))
         itz_geoids = []
         for _, row in tract_df.iterrows():
             geoid = row["GEO_ID"]
-            if geoid[-1] != '0':
-                itz_geoids.append(COUNTY_CODES[geoid[11:14]] + row["NAME"][13:row["NAME"].find(",")])
-            else:
-                itz_geoids.append(COUNTY_CODES[geoid[11:14]] + row["NAME"][13:row["NAME"].find(",")])
+            itz_geoids.append(CODE_TO_COUNTY[geoid[11:14]] + row["NAME"][13:row["NAME"].find(",")])
 
     tract_df["ITZ_GEOID"] = itz_geoids
 
@@ -250,6 +382,8 @@ def _get_lot_data() -> pd.DataFrame:
     Index: ITZ_GEOID
     Uses 2011 Lots - all other lots are discarded. 
     """
+    # 2011 is a starting year and uses 2000 census tracts- so next_pluto, or 2012 data, has to be loaded in order to create
+    # ITZ_GEOIDs correctly. 
     try:
         starting_pluto = pd.read_csv(PLUTO_PATH % LOT_DATA_YEARS[0], header=0, dtype=str)
     except:
@@ -258,78 +392,29 @@ def _get_lot_data() -> pd.DataFrame:
         print("next pluto created")
         next_pluto.set_index("BBL", inplace=True)
     print("starting pluto created")
-    # print(starting_pluto.columns)
-    # print(starting_pluto.index)
+
     starting_pluto.set_index("BBL", inplace=True)
     starting_pluto.sort_index()
     print(starting_pluto)
 
     # Create ITZ_GEOID column in lot_df
     if starting_pluto["Version"].iloc[0] == "11v1  ":
-        # next_pluto = pd.read_table(PLUTO_TEXT_PATH % 2012, header=0, sep=",", dtype=str, usecols=["BBL", "CT2010"])
         print(next_pluto)
-        # itz_geoid = []
-        # success = 0
         starting_pluto = starting_pluto.join(next_pluto, on="BBL")
         del next_pluto
         print(starting_pluto)
         print(starting_pluto.columns)
         starting_pluto["ITZ_GEOID"] = starting_pluto["Borough"] + starting_pluto["CT2010"].str.strip()
-        # starting_pluto["ITZ_GEOID"].mask[starting_pluto["ITZ_GEOID"] in ["MN","QN","BX","SI","BK"]]
-        # for index, row in starting_pluto.iterrows():
-        #     try:
-        #         tract_2010 = next_pluto.loc[next_pluto["BBL"] == index]["CT2010"].strip()
-        #         county = COUNTY_CODES[row["Borough"]]
-        #         itz_geoid.append(county+tract_2010)
-        #         success += 1
-        #     except:
-        #         itz_geoid.append("nan")
-
-        # block_to_tract = {}
-        # tract_to_tract = {}
-        # census_conversion_df = pd.read_csv(TRACT_DICT_PATH, dtype=str)
-        # # print(census_conversion_df[census_conversion_df["BLK_2000"] == ''])
-        # for _, row in census_conversion_df.iterrows():
-        #     if row["TRACT_2010"][-1] != "0":
-        #         # 0850176003015
-        #         # 0850208001037
-        #         # 0610208003001
-        #         block_to_tract[row["COUNTY_2000"] + row["TRACT_2000"] + row["BLK_2000"]] = str(int(row["TRACT_2010"][:-2])) + "." + str(int(row["TRACT_2010"][-2:]))
-        #         tract_to_tract[row["COUNTY_2000"] + row["TRACT_2000"]] = str(int(row["TRACT_2010"][:-2])) + "." + str(int(row["TRACT_2010"][-2:]))
-        #     else:
-        #         block_to_tract[row["COUNTY_2000"] + row["TRACT_2000"] + row["BLK_2000"]] = str(int(row["TRACT_2010"][:-2]))
-        #         tract_to_tract[row["COUNTY_2000"] + row["TRACT_2000"]] = str(int(row["TRACT_2010"][:-2]))
-        # census_2000 = starting_pluto["Borough"].map(COUNTY_TO_CODE) + starting_pluto["Tract2000"].astype(str).str.slice(stop=4)  +  "00" + starting_pluto["CB2000"].astype(str).str.slice(stop=4)
-        # census_2000.to_csv("pluto census 2000.csv")
-        # with open("block-to-tract.csv", "w") as f:
-        #     f.write(str(block_to_tract))
-        # itz_geoid = []
-        # num_good = 0
-        # for index, id in census_2000.items():
-        #     try:
-        #         itz_geoid.append(starting_pluto.at[index, "Borough"] + block_to_tract[id])
-        #     except:
-        #         itz_geoid.append("Nan")
-        #         # try: 
-        #         #     itz_geoid.append(starting_pluto.at[index, "Borough"] + tract_to_tract[id])
-        #         # except:
-        #         #     print(id)
-        #         # print(id)
-        #         continue
-        #     else:
-        #         print("OK AND CORRECT!!!", id)
-        #         num_good += 1
-        #         # print(starting_pluto.loc[index], starting_pluto.at[index, "Tract2000"], starting_pluto.at[index, "CB2000"])
-        # starting_pluto["ITZ_GEOID"] = pd.Series(itz_geoid)
     else: 
         starting_pluto["ITZ_GEOID"] = starting_pluto["Borough"] + starting_pluto["CT2010"]
 
-    # print(num_good)
-    # print(success)
+    # Filter starting_pluto for valid ITZ_GEOIDs
     starting_pluto = starting_pluto[starting_pluto['ITZ_GEOID'].map(lambda x: len(str(x)) != 2)]
     starting_pluto = starting_pluto[starting_pluto["ITZ_GEOID"].notnull()]
+    # Copy the index of BBLs in starting_pluto
     lot_bbl = starting_pluto.index
-    # print(len(itz_geoid))
+
+    # Create the list of columns in lot_df. 
     columns = []
     for year in LOT_DATA_YEARS:
         columns.append("land_use"+year)
@@ -338,10 +423,10 @@ def _get_lot_data() -> pd.DataFrame:
         columns.append("mixed_development"+year)
         columns.append("limited_height"+year)
         columns.append("resid_units"+year)
+    # Create lot_df. 
     lot_df = pd.DataFrame(index=lot_bbl, columns=columns)
-    print(len(lot_df))
+    # Copy the ITZ_GEOIDs from starting_pluto. 
     lot_df["ITZ_GEOID"] = starting_pluto["ITZ_GEOID"]
-    print(lot_df["ITZ_GEOID"])
     # LotArea doesn't change, and starting_pluto uses the same indexing as lot_df, so the column can simply be copied over.
     lot_df["lot_area"] = starting_pluto["LotArea"].astype(float)
     print("ITZ geoids created!")
@@ -354,7 +439,7 @@ def _get_lot_data() -> pd.DataFrame:
             pluto_df = pd.read_csv(PLUTO_PATH % year, dtype=str)
         except:
             pluto_df = pd.read_csv(PLUTO_TEXT_PATH % year, sep=",", dtype=str)
-        # Sort by BBL
+        # Set the index and sort by BBL in order to maintain consistency
         print(pluto_df)
         try:
             pluto_df.set_index('BBL', inplace=True)
@@ -389,60 +474,22 @@ def _get_lot_data() -> pd.DataFrame:
                 lot_df["max_resid_far" + year] = pluto_df["MaxAllwFAR"]
             except:
                 lot_df["max_resid_far" + year] = pluto_df["residfar"]
-        # for bbl in lot_bbl:
-        #     print(bbl)
-        #     # try: 
-        #         # Find land use of lot with this BBL using binary search
-        #     # lot_df["land_use" + year][bbl] = pluto_df["LandUse"][pluto_df[bbl_var].searchsorted(bbl)]
-        #     # lot_df["Zoning" + year][bbl] = pluto_df.at[bbl, "LandUse"]
-        #     # print(pluto_df["LandUse"])
-        #     # print(pluto_df.index)
-        #     # print(pluto_df.loc[[bbl]])
-        #     # pluto_df["LandUse"].to_csv("landuse.csv")
-        #     # print(pluto_df.at[bbl, "LandUse"])
-        #     try:
-        #         lot_df["land_use" + year][bbl] = pluto_df["LandUse"][bbl]
-        #     except:
-        #         lot_df["land_use" + year][bbl] = pluto_df["landuse"][bbl]
-        #     # except:
-        #     #     print("EXCEPTED AT LINE 281")
-        #     #     continue
-        #     try:
-        #         lot_df["zoning" + year][bbl] = pluto_df["ZoneDist1"][pluto_df[bbl_var].searchsorted(bbl)]
-        #         lot_df["zoning" + year][bbl] = pluto_df["ZoneDist1"][bbl]
-        #     except:
-        #         lot_df["zoning" + year][bbl] = pluto_df["zonedist1"][pluto_df[bbl_var].searchsorted(bbl)]
-        #         lot_df["zoning" + year][bbl] = pluto_df["zonedist1"][bbl]
-
-        #     try:
-        #         lot_df["max_resid_far" + year][bbl] = pluto_df["ResidFAR"][pluto_df[bbl_var].searchsorted(bbl)].astype(float)
-        #         lot_df["max_resid_far" + year][bbl] = pluto_df["ResidFAR"][bbl]
-        #     except: 
-        #         # lot_df["max_resid_far" + year][bbl] = pluto_df["MaxAllwFAR"][pluto_df[bbl_var].searchsorted(bbl)].astype(float)
-        #         try:
-        #             lot_df["max_resid_far" + year][bbl] = pluto_df["MaxAllwFAR"][bbl]
-        #         except:
-        #             lot_df["max_resid_far" + year][bbl] = pluto_df["residfar"][bbl]
-
         try:
             lot_df["mixed_development" + year] = pluto_df["landuse"] == "4"
         except KeyError:
             lot_df["mixed_development" + year] = pluto_df["LandUse"] == "4"
         try:
-            lot_df["limited_height" + year] = pluto_df["ltdheight"].strip() != ''
+            lot_df["limited_height" + year] = pluto_df["ltdheight"].str.strip() != ''
         except KeyError:
-            lot_df["limited_height" + year] = pluto_df["LtdHeight"].strip() != ''
+            lot_df["limited_height" + year] = pluto_df["LtdHeight"].str.strip() != ''
         try:
             lot_df["resid_units" + year] = pluto_df["unitsres"]
         except KeyError:
             lot_df["resid_units" + year] = pluto_df["UnitsRes"]
+        lot_df["resid_units"+year].to_csv("resid_units"+year+".csv")
 
         del pluto_df
     print("Lot Data year data collected!")
-        # Boolean series
-    # lot_df.reset_index(inplace=True, drop=True)
-    # lot_df.set_index("ITZ_GEOID", inplace=True)
-    # lot_df.sort_index()
     return lot_df
 
 
@@ -466,34 +513,45 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
         "orig_percent_subsidized_properties"
     ])
     for delta in DELTAS:
+        print("Now working on: ", delta)
         start = delta[0]
         end = delta[1]
-        upzoned = 0
-        years_since_upzoned = []
-        residential_units_start = 0
-        residential_units_end = 0
         for tract, lot_list in tracts_to_lots.items():
+            # print(tract, lot_list)
+            upzoned = 0
+            years_since_upzoned = []
+            lots_with_res_unit_data = 0
+            residential_units_start = 0
+            residential_units_end = 0
             for lot in lot_list:
-                prev = lot_df.at[lot, "max_resid_far"+str(start)]*lot_df.at[lot, "lot_area"]
-                # for year in range(start+1, end+1):
-                for year in [2011, 2019]:
-                    curr = lot_df.at[lot, "max_resid_far"+str(year)]*lot_df.at[lot, "lot_area"]
-                    if curr/prev > 1.1 and prev != 0:
+                prev = float(lot_df.at[lot, "max_resid_far"+str(start)])*float(lot_df.at[lot, "lot_area"])
+                for year in range(int(start)+1, int(end)+1):
+                # for year in [2011, 2016, 2019]:
+                    curr = float(lot_df.at[lot, "max_resid_far"+str(year)])*float(lot_df.at[lot, "lot_area"])
+                    if prev != 0 and curr/prev > 1.1:
                         upzoned += 1
                         years_since_upzoned.append(int(end)-int(year))
                         break
                     prev = curr
                 try:
-                    residential_units_start += lot_df.at[lot, "resid_units"+str(start)]
-                    residential_units_end += lot_df.at[lot, "resid_units"+str(end)]
-                except ValueError:
+                    _ = int(lot_df.at[lot, "resid_units"+str(start)])
+                    _ = int(lot_df.at[lot, "resid_units"+str(end)])
+                except:
                     continue
-            try:
-                tract_lot_data.at[tract, start + "_" + end + "_percent_upzoned"] = upzoned/len(lot_list)
+                else:
+                    residential_units_start += int(lot_df.at[lot, "resid_units"+str(start)])
+                    residential_units_end += int(lot_df.at[lot, "resid_units"+str(end)])
+                    lots_with_res_unit_data += 1
+                    # print(residential_units_start, residential_units_end)
+                try:
+                    _ = float(residential_units_end)
+                except:
+                    raise Exception()
+            tract_lot_data.at[tract, start + "_" + end + "_percent_upzoned"] = 100 * upzoned/len(lot_list)
+            if len(years_since_upzoned) != 0:
                 tract_lot_data.at[tract, start + "_" + end + "_average_years_since_upzoning"] = sum(years_since_upzoned)/len(years_since_upzoned)
-                tract_lot_data.at[tract, "d_" + start + "_" + end + "_resid_units"] = residential_units_end-residential_units_start
-            except:
-                print(tract, len(lot_list), lot_list)
+            tract_lot_data.at[tract, "d_" + start + "_" + end + "_resid_units"] = residential_units_end-residential_units_start
+
     land_use_lots = 0
     for tract, lot_list in tracts_to_lots.items():
         residential = 0
@@ -511,13 +569,26 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
                 limited_height += 1
             if lot_df["mixed_development2011"][lot] == True:
                 mixed_development += 1
-        tract_lot_data.at[tract, "orig_percent_residential"] = residential/land_use_lots
+        tract_lot_data.at[tract, "orig_percent_residential"] = 100 * residential/land_use_lots
         tract_lot_data.at[tract, "orig_percent_mixed_development"] = mixed_development/land_use_lots
         tract_lot_data.at[tract, "orig_percent_limited_height"] = limited_height/len(lot_list)
 
     subsidized_property_by_tract = pd.read_csv(SUBSIDIZED_PROPERTIES_PATH)["tract_10"].value_counts(sort=False)
+    subsidized_property_by_geoid = {}
     for tract, count in subsidized_property_by_tract.items():
-        tract_lot_data.at[tract, "orig_percent_subsidized_properties"] = count/len(lot_list)
+        str_tract = str(tract)
+        if str_tract[-1] != "0":
+            itz_geoid = CODE_TO_COUNTY[str_tract[2:5]]+str(int(str_tract[5:9]))+"."+str(int(str_tract[9:]))
+        else:
+            itz_geoid = CODE_TO_COUNTY[str_tract[2:5]]+str(int(str_tract[5:9]))
+        subsidized_property_by_geoid[itz_geoid] = count
+    for itz_geoid, lot_list in tracts_to_lots.items():
+        try:
+            tract_lot_data.at[itz_geoid, "orig_percent_subsidized_properties"] = 100 * subsidized_property_by_geoid[itz_geoid]/len(lot_list)
+            del subsidized_property_by_geoid[itz_geoid]
+        except:
+            tract_lot_data.at[itz_geoid, "orig_percent_subsidized_properties"] = 0
+    print(subsidized_property_by_geoid)
     return tract_lot_data
 
 
@@ -525,8 +596,7 @@ def _get_delta_data(tract_dfs, index) -> pd.DataFrame:
     """Calculates the changes for tract-specific data between starting and ending points. 
     """
     tract_delta = pd.DataFrame(index=index)
-    # date_to_index = {'2011':0, '2016':1, '2019':2}
-    date_to_index = {'2011':0, '2019':1}
+    date_to_index = {'2011':0, '2016':1, '2019':2}
 
     for delta in DELTAS:
         start_index = date_to_index[delta[0]]
@@ -549,7 +619,7 @@ def _get_delta_data(tract_dfs, index) -> pd.DataFrame:
         
         tract_delta["d_"+delta[0]+"_"+delta[1]+"_percent_car_commuters"] = tract_dfs[end_index]["percent_car_commuters"] - tract_dfs[start_index]["percent_car_commuters"]
         tract_delta["d_"+delta[0]+"_"+delta[1]+"_percent_public_transport_commuters"] = tract_dfs[end_index]["percent_public_transport_commuters"] - tract_dfs[start_index]["percent_public_transport_commuters"]
-        tract_delta["d_"+delta[0]+"_"+delta[1]+"_mean_public_transport_travel_time"] = tract_dfs[end_index]["mean_public_transport_travel_time"] - tract_dfs[start_index]["mean_public_transport_travel_time"]
-        tract_delta["d_"+delta[0]+"_"+delta[1]+"_mean_car_travel_time"] = tract_dfs[end_index]["mean_car_travel_time"] - tract_dfs[start_index]["mean_car_travel_time"]
+        tract_delta["d_"+delta[0]+"_"+delta[1]+"_percent_public_transport_trips_under_45_min"] = tract_dfs[end_index]["percent_public_transport_trips_under_45_min"] - tract_dfs[start_index]["percent_public_transport_trips_under_45_min"]
+        tract_delta["d_"+delta[0]+"_"+delta[1]+"_percent_car_trips_under_45_min"] = tract_dfs[end_index]["percent_car_trips_under_45_min"] - tract_dfs[start_index]["percent_car_trips_under_45_min"]
         
     return tract_delta

@@ -2,6 +2,9 @@
 
 Note: income data is inflation-adjusted
 
+NOTE: Labels are OUTDATED, since they are not consistent across years of ACS data. 
+Please see data.py to see which labels are actually being used. 
+
 ## ACS Data Prefixes
 
 - S0802 - transportation
@@ -57,18 +60,18 @@ Divide these by tract area (ALAND10).
 - DP04_0088E: median_home_value
     - Not sure exactly what this is measuring. Description: 'Estimate!!VALUE!!Median (dollars)' - from ACS housing data
     - This actually measures the median home value in the census tract. - Jam
-- S0802_C04_090E: mean_public_transport_travel_time
-- S0802_C03_090E: mean_car_travel_time
-- DP05_0072PE: percent_non_hispanic_or_latino_white_alone
-- DP05_0073PE: percent_non_hispanic_black_alone
+- S0802_C04_090E: percent_public_transport_trips_under_45_min
+- S0802_C03_090E: percent_car_trips_under_45_min
+- DP05_0032PE: percent_non_hispanic_or_latino_white_alone
+- DP05_0033PE: percent_non_hispanic_black_alone
 - DP05_0066PE: percent_hispanic_any_race
-- DP05_0075PE: percent_non_hispanic_asian_alone
+- DP05_0039PE: percent_non_hispanic_asian_alone
 - DP03_0088E: per_capita_income
 - DP05_0017E: median_age
 - DP02_0013PE: percent_households_with_people_under_18
 - DP04_0002PE: percent_occupied_housing_units
 - DP04_0132E: median_gross_rent
-- DP02_0079PE: percent_of_households_in_same_house_year_ago
+- DP02_0080PE: percent_of_households_in_same_house_year_ago
 - DP02_0067PE: percent_bachelor_degree_or_higher
 
 ### Columns requiring lot data
