@@ -2,6 +2,6 @@
 """
 
 from itz.data import get_data
-from itz.model import fit, get_description
+from itz.model import evaluate, fit, get_description
 from itz.visualization import (make_sem_diagram, make_regression_plot, make_residual_plot,
                                make_histogram)

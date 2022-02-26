@@ -2,8 +2,10 @@
 """
 
 from enum import Enum
+from typing import Dict, Tuple
 
-
+import pandas as pd
+import semopy
 
 
 class ModelName(Enum):
@@ -11,25 +13,25 @@ class ModelName(Enum):
     SHORT_TERM_NO_CARBON_EMISSIONS = 1
     SHORT_TERM_CARBON_EMISSIONS = 2
 
+MODEL_NAMES = ("LONG_TERM", "SHORT_TERM_NO_CARBON_EMISSIONS", "SHORT_TERM_CARBON_EMISSIONS")
+
 MODEL_YEARS = {
     ModelName.LONG_TERM: ("2011", "2019"),
     ModelName.SHORT_TERM_CARBON_EMISSIONS: ("2011", "2016"),
     ModelName.SHORT_TERM_NO_CARBON_EMISSIONS: ("2011", "2016")
 }
 
-def fit(desc, data):
+
+def fit(desc: str, data: pd.DataFrame, verbose=False) -> Tuple[semopy.Model, Dict[str, float]]:
     """Fits an SEM to a dataset. Returns model parameters and evaluation metrics.
     """
+    print("fitting", desc)
 
-def get_description(model_name):
+
+def get_description(model_name: ModelName) -> str:
     """Creates a semopy model description for one of three possible SEMs.
-
-    Model options:
-    - long-term
-    - short-term-with-emissions
-    - short-term-no-emissions
     """
 
-def _evaluate(model, data):
+def evaluate(model: semopy.Model, data: pd.DataFrame) -> Dict[str, float]:
     """Returns evaluations of how well an SEM fits a dataset.
     """

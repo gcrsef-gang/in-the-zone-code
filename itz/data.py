@@ -3,13 +3,11 @@
 
 import json
 from tracemalloc import start
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 import numpy as np
 import math
-
-from itz.model import ModelName
 
 
 ACS_DEMOGRAPHIC_PATH = "in-the-zone-data/acs/nyc-demographic-data-%s.csv"
@@ -22,8 +20,44 @@ PLUTO_TEXT_PATH = "in-the-zone-data/zoning-data/mergedPLUTO-%s.txt"
 TRACT_DICT_PATH = "in-the-zone-data/2000-to-2010-census-blocks-tracts.txt"
 CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
+TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ()
+VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
+       '2016_2019_percent_upzoned', '2011_2016_average_years_since_upzoning',
+       '2011_2019_average_years_since_upzoning',
+       '2016_2019_average_years_since_upzoning', 'd_2011_2016_resid_units',
+       'd_2011_2019_resid_units', 'd_2016_2019_resid_units',
+       'orig_percent_residential', 'orig_percent_limited_height',
+       'orig_percent_mixed_development', 'orig_percent_subsidized_properties',
+       'd_2011_2019_pop_density', 'd_2011_2019_resid_unit_density',
+       'd_2011_2019_per_capita_income',
+       'd_2011_2019_percent_non_hispanic_or_latino_white_alone',
+       'd_2011_2019_percent_non_hispanic_black_alone',
+       'd_2011_2019_percent_hispanic_any_race',
+       'd_2011_2019_percent_non_hispanic_asian_alone',
+       'd_2011_2019_percent_multi_family_units',
+       'd_2011_2019_percent_occupied_housing_units',
+       'd_2011_2019_median_gross_rent', 'd_2011_2019_median_home_value',
+       'd_2011_2019_percent_households_with_people_under_18',
+       'd_2011_2019_percent_of_households_in_same_house_year_ago',
+       'd_2011_2019_percent_bachelor_degree_or_higher',
+       'd_2011_2019_percent_car_commuters',
+       'd_2011_2019_percent_public_transport_commuters',
+       'd_2011_2019_mean_public_transport_travel_time',
+       'd_2011_2019_mean_car_travel_time', 'orig_pop_density',
+       'orig_percent_non_hispanic_or_latino_white_alone',
+       'orig_percent_non_hispanic_black_alone',
+       'orig_percent_hispanic_any_race',
+       'orig_percent_non_hispanic_asian_alone', 'orig_median_age',
+       'orig_per_capita_income', 'orig_resid_unit_density',
+       'orig_percent_multi_family_units',
+       'orig_percent_occupied_housing_units', 'orig_median_gross_rent',
+       'orig_median_home_value',
+       'orig_percent_households_with_people_under_18',
+       'orig_percent_of_households_in_same_house_year_ago',
+       'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters',
+       'orig_percent_public_transport_commuters',
+       'orig_mean_public_transport_travel_time', 'orig_mean_car_travel_time')
 
 DELTAS = [("2011", "2019"), ("2011", "2016"), ("2016", "2019")]
 
@@ -45,53 +79,78 @@ COUNTY_TO_CODE = {
     "SI": "085"
 }
 
-def get_data() -> pd.DataFrame:
+def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
+             verbose=False) -> Tuple[pd.DataFrame, List[pd.DataFrame], pd.DataFrame]:
     """Creates DataFrame with columns corresponding to variables used in the SEM models.
+
+    Parameters
+    ----------
+    lot_data (optional): pd.DataFrame
+        Pre-parsed DataFrame containing lot-related data.
+    tract_data (optional): List of pd.DataFrame
+        Pre-parsed DataFrame containing tract-related data.
+    verbose (optional): bool
+        Whether to print status as the function executes.
+
+    Returns
+    -------
+    Tuple
+        Lot data DF, tract data DFs, and a combined DF for use with semopy models.
     """
     # Load tract data. 
     tract_dfs = _get_tract_data()
     print("Tract data collected!")
 
-    for tract_df in tract_dfs:
-        tract_df = tract_df[tract_df["median_gross_rent"].notnull()]
-        tract_df = tract_df[tract_df["median_home_value"].notnull()]
-    tract_dfs[0] = tract_dfs[0].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
-    tract_dfs[1] = tract_dfs[1].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
-    tract_dfs[2] = tract_dfs[2].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
-
-    # tract_dfs[0].to_csv("tract_data0.csv")
-    # tract_dfs[1].to_csv("tract_data1.csv")
-    # tract_dfs[2].to_csv("tract_data2.csv")
-
-    # For loading data from existing files. 
-    # tract_df_0 = pd.read_csv("tract_data0.csv", index_col="ITZ_GEOID")
-    # tract_df_1 = pd.read_csv("tract_data1.csv", index_col="ITZ_GEOID")
-    # tract_df_2 = pd.read_csv("tract_data2.csv", index_col="ITZ_GEOID")
-    # tract_dfs = [tract_df_0, tract_df_1, tract_df_2]
-
     # Load lot data. 
     lot_df = _get_lot_data()
     print("Lot data collected!")
     # lot_df.to_csv("lot_data.csv")
+    # Load/parse tract data.
+    if verbose:
+        print("Collecting tract data... ", end="")
+    tract_dfs = []
+    if len(tract_data) == 0:
+        tract_dfs = _get_tract_data()
+        if verbose:
+            print("Done!")
+    else:
+        tract_dfs = tract_data
+        if verbose:
+            print("Using provided.")
 
-    # For loading data from an existing file. 
-    lot_df = pd.read_csv("lot_data.csv", dtype=str)
+    for tract_df in tract_dfs:
+        tract_df = tract_df[tract_df["median_gross_rent"].notnull()]
+        tract_df = tract_df[tract_df["median_home_value"].notnull()]
+    # TODO: GENERALIZE INDEX INTERSECTIONS
+    tract_dfs[0] = tract_dfs[0].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
+    tract_dfs[1] = tract_dfs[1].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
+    tract_dfs[2] = tract_dfs[2].loc[tract_dfs[0].index.intersection(tract_dfs[1].index).intersection(tract_dfs[2].index)]
+
+    # Load lot data. 
+    if verbose:
+        print("Collecting lot data... ", end="")
+    if lot_data is None:
+        lot_df = _get_lot_data()
+        if verbose:
+            print("Done!")
+    else:
+        lot_df = lot_data
+        if verbose:
+            print("Using provided.")
     lot_df.set_index("BBL", inplace=True)
 
 
     # Create dictionary which holds all lot BBL numbers corresponding to each tract ITZ_GEOID. 
-    tracts_to_lots = {}
-    for value in tract_dfs[0].index:
-        tracts_to_lots[value] = []
-    for index, row in lot_df.iterrows():
-        tracts_to_lots[row["ITZ_GEOID"]].append(index)
-    print("Tracts to lots created!")
-    with open("tract_to_lot_list.txt", "w") as f:
-        f.write(str(tracts_to_lots))
-
-    # Load an existing created dictionary.
-    with open("tract_to_lot_list.txt", "r") as f:
-        tracts_to_lots = eval(f.read())
+    # tracts_to_lots = {}
+    # for value in tract_dfs[0].index:
+    #     tracts_to_lots[value] = []
+    # for index, row in lot_df.iterrows():
+    #     tracts_to_lots[row["ITZ_GEOID"]].append(index)
+    # print("Tracts to lots created!")
+    # with open("tract_to_lot_list.txt", "w") as f:
+    #     f.write(str(tracts_to_lots))
+    with open(TRACTS_TO_LOTS_PATH, "r") as f:
+        tracts_to_lots = json.load(f)
 
     # Delete tracts without lots.  
     tracts_to_delete = []
@@ -100,28 +159,37 @@ def get_data() -> pd.DataFrame:
             tracts_to_delete.append(tract)
     for tract in tracts_to_delete:
         del tracts_to_lots[tract]
-    # model_df = pd.DataFrame(index=tract_dfs["ITZ_GEOID"])
 
-    # Combine tract and lot data. 
+    # Combine tract and lot data.
+    if verbose:
+        print("Producing lot-based data for tracts... ", end="") 
     tract_lot_data = _get_tract_lot_data(lot_df, tracts_to_lots)
-    print("Tract lot data collected!")
+    if verbose:
+        print("Done!")
 
     # Find Tract delta data. 
+    if verbose:
+        print("Calculating deltas between starting and ending tract data... ", end="")
     tract_deltas = _get_delta_data(tract_dfs, tracts_to_lots.keys())
-    print("Tract delta data collected!")
-
-    # Add "orig_" to the beginning of columns for 2011 data. 
-    columns = {}
-    for column in tract_dfs[0].columns:
-        columns[column] = "orig_"+column
-    tract_dfs[0].rename(columns=columns, inplace=True)
+    if verbose:
+        print("Done!")
 
     # Combine dataframes to create final model data. 
+    if verbose:
+        print("Combining data sources... ", end="")
+    columns = {}
+    for column in tract_dfs[0].columns:
+        columns[column] = "orig_" + column
+    tract_dfs[0].rename(mapper=columns, axis="columns", inplace=True)
     model_df = pd.concat([tract_lot_data, tract_deltas, tract_dfs[0]], axis=1)
-
+    if verbose:
+        print("Done!")
     model_df.to_csv("itz-data.csv")
-    print("Model data saved.")
-    
+    return lot_df, tract_dfs, model_df
+
+
+# TODO: Add verbosity options to these functions.
+
 
 def _get_tract_data() -> List[pd.DataFrame]:
     """Returns a list of two DataFrames with columns not requiring lot data.
