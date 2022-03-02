@@ -83,7 +83,11 @@ def _fit(model_string: str, model_path: str, data_path: str, verbose):
     print(itz.evaluate(model))
 
 
+<<<<<<< HEAD
 def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log_y=False) -> Dict[str, float]:
+=======
+def _make_graph(x, img_path1, data_path, y, img_path2, verbose):
+>>>>>>> 5c212d40bee519fcae36e38c62a214d9b1b688c4
     """Create a visualization of one or two variables from our dataset.
     
     Prints descriptive statistics.
@@ -103,7 +107,10 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
     regression_stats = itz.make_regression_plot(x, y, data, img_path1, log_x, log_y)
     if img_path2:
         residual_stats = itz.make_residual_plot(x, y, data, img_path2, log_x, log_y)
-        return {**regression_stats, **residual_stats}
+        stats = {**regression_stats, **residual_stats}
+        for key, val in stats.items():
+                print(f"{key}: {val}")
+        return stats
     else:
         # pass
         # **regression_stats is not a thing???
@@ -165,7 +172,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     print(args)
-    stats = args.func(**{key: val for key, val in vars(args).items() if key != "func"})
-    if stats is not None:
-        for key, val in stats.items():
-            print(f"{key}: {val}")
+    args.func(**{key: val for key, val in vars(args).items() if key != "func"})
