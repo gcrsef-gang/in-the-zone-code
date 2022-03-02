@@ -26,7 +26,7 @@ Fit an SEM model and print results.
 
 Parameters:
 - model: name of the model to fit.
-- model_path: path to file storing model parameters (pickle).
+- model_path: path to file to store model estimated covariance matrix.
 - data_path: path to CSV with data for model.
 
 graph <x> <img_path1> <data_path> [--y Y_VAR_NAME] [--img_path2 IMG_PATH2]
@@ -59,8 +59,8 @@ Use -v for verbosity.
 from typing import Dict, List
 import argparse
 import os
-import pickle
 
+import numpy as np
 import pandas as pd
 
 import itz
@@ -73,28 +73,41 @@ def _make_diagram(model_string: str, img_path: str, verbose):
     itz.make_sem_diagram(model, img_path)
 
 
-def _fit(model_string: str, model_path: str, data_path: str, verbose) -> Dict[str, float]:
-    """Fits a model to the data.
+def _fit(model_string: str, model_path: str, data_path: str, verbose):
+    """Fits a model to the data and prints evaluation metrics.
     """
     model_name = itz.model.ModelName.__dict__[model_string]
     data = pd.read_csv(data_path)
     model = itz.fit(itz.get_description(model_name), data, verbose)
-    with open(model_path, "wb+") as f:
-        pickle.dump(model, f)
-    return itz.evaluate(model, data)
+    np.savetxt(model_path, model.calc_sigma()[0], delimiter=",")
+    print(itz.evaluate(model))
 
 
-def _make_graph(x, img_path1, data_path, y, img_path2, verbose) -> Dict[str, float]:
+def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log_y=False) -> Dict[str, float]:
     """Create a visualization of one or two variables from our dataset.
     
-    Returns descriptive statistics as a dictionary.
+    Prints descriptive statistics.
     """
     data = pd.read_csv(data_path)
     if y is None:
-        return itz.make_histogram(x, data, img_path1)
-    regression_stats = itz.make_regression_plot(x, y, data, img_path1)
-    residual_stats = itz.make_residual_plot(x, y, data, img_path2)
-    return {**regression_stats, **residual_stats}
+        if x == 'all_vars':
+            for column in data.columns:
+                if column in ["Unnamed: 0","orig_percent_limited_height", "orig_percent_mixed_development"]:
+                    continue
+                print("working on:", column)
+                itz.make_histogram(column, data, column+".png")
+                print("Histogram created:", column)
+            return
+        else:
+            return itz.make_histogram(x, data, img_path1)
+    regression_stats = itz.make_regression_plot(x, y, data, img_path1, log_x, log_y)
+    if img_path2:
+        residual_stats = itz.make_residual_plot(x, y, data, img_path2, log_x, log_y)
+        return {**regression_stats, **residual_stats}
+    else:
+        # pass
+        # **regression_stats is not a thing???
+        return {"sum of squared_residuals":regression_stats[0]}
 
 
 def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], verbose):
@@ -103,17 +116,18 @@ def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], ve
     tract_data = (
         [pd.read_csv(path, index_col="ITZ_GEOID") for path in tract_data_paths]
         if tract_data_paths is not None else [])
-    lot_data = (pd.read_csv(lot_data_path, index_col="ITZ_GEOID")
+    lot_data = (pd.read_csv(lot_data_path)
                 if lot_data_path is  not None else None)
     lot_data, tract_data, model_data = itz.get_data(lot_data, tract_data, verbose)
     try:
         os.mkdir(output_path)
     except FileExistsError:
         pass
-    lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
+
     for i, tract_df in enumerate(tract_data):
         tract_df.to_csv(os.path.join(output_path, f"tract-data-{i}.csv"))
     model_data.to_csv(os.path.join(output_path, "itz-data.csv"))
+    lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
 
 
 if __name__ == "__main__":
@@ -135,10 +149,12 @@ if __name__ == "__main__":
 
     graph_parser = subparsers.add_parser("graph")
     graph_parser.add_argument("x", choices=itz.data.VAR_NAMES)
-    graph_parser.add_argument("img_path1")
     graph_parser.add_argument("data_path")
+    graph_parser.add_argument("--img_path1", required=False)
     graph_parser.add_argument("--y", choices=itz.data.VAR_NAMES, required=False)
     graph_parser.add_argument("--img_path2", required=False)
+    graph_parser.add_argument("--log_x", required=False, action="store_true")
+    graph_parser.add_argument("--log_y", required=False, action="store_true")
     graph_parser.set_defaults(func=_make_graph)
 
     parse_parser = subparsers.add_parser("parse")
@@ -148,6 +164,7 @@ if __name__ == "__main__":
     parse_parser.set_defaults(func=_parse)
 
     args = parser.parse_args()
+    print(args)
     stats = args.func(**{key: val for key, val in vars(args).items() if key != "func"})
     if stats is not None:
         for key, val in stats.items():

@@ -7,6 +7,8 @@ from typing import Dict, Tuple
 import pandas as pd
 import semopy
 
+from .data import VAR_NAMES
+
 
 class ModelName(Enum):
     LONG_TERM = 0
@@ -22,16 +24,65 @@ MODEL_YEARS = {
 }
 
 
-def fit(desc: str, data: pd.DataFrame, verbose=False) -> Tuple[semopy.Model, Dict[str, float]]:
-    """Fits an SEM to a dataset. Returns model parameters and evaluation metrics.
+DEPENDENT_VARIABLES = {
+    ModelName.LONG_TERM: (
+        "d_2011_2019_percent_car_commuters",
+        "d_2011_2019_percent_car_commuters",
+        "d_2011_2019_percent_public_transport_commuters",
+        "d_2011_2019_percent_public_transport_trips_under_45_min",
+        "d_2011_2019_percent_car_trips_under_45_min",
+        "d_2011_2019_percent_non_hispanic_or_latino_white_alone",
+        "d_2011_2019_percent_occupied_housing_units",
+        "d_2011_2019_median_home_value",
+        "d_2011_2019_per_capita_income",
+        "d_2011_2019_median_gross_rent"),
+    ModelName.SHORT_TERM_CARBON_EMISSIONS: (),
+    ModelName.SHORT_TERM_NO_CARBON_EMISSIONS: ()
+}
+
+
+def fit(desc: str, data: pd.DataFrame, verbose=False) -> semopy.Model:
+    """Fits an SEM to a dataset.
     """
-    print("fitting", desc)
+    if verbose:
+        print(desc)
+    model = semopy.Model(desc)
+    model.fit(data)
+    return model
 
 
 def get_description(model_name: ModelName) -> str:
     """Creates a semopy model description for one of three possible SEMs.
     """
+    start_yr, end_yr = MODEL_YEARS[model_name]
+    relationships = []
 
-def evaluate(model: semopy.Model, data: pd.DataFrame) -> Dict[str, float]:
+    # Latent variables
+    densification_indicators = [
+        f"d_{start_yr}_{end_yr}_pop_density",
+        f"d_{start_yr}_{end_yr}_resid_unit_density",
+        f"d_{start_yr}_{end_yr}_percent_multi_family_units"
+    ]
+    relationships.append(f"densification =~ " + " + ".join(densification_indicators))
+
+    controls = [var for var in VAR_NAMES if var[:4] == "orig"]
+    controls.append(f"{start_yr}_{end_yr}_average_years_since_upzoning")
+    
+    # Regressions
+
+    for dep_var in DEPENDENT_VARIABLES[model_name]:
+        relationships.append(f"{dep_var} ~ densification")
+        for control in controls:
+            relationships.append(f"{dep_var} ~ {control}")
+
+    percent_upzoned = f"{start_yr}_{end_yr}_percent_upzoned"
+    relationships.append(f"densification ~ {percent_upzoned}")
+    relationships.append(f"d_{start_yr}_{end_yr}_median_home_value ~ {percent_upzoned}")
+    
+    return "\n".join(relationships)
+
+
+def evaluate(model: semopy.Model) -> pd.DataFrame:
     """Returns evaluations of how well an SEM fits a dataset.
     """
+    return model.inspect()

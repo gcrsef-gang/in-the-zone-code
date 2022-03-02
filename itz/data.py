@@ -22,7 +22,7 @@ CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
+VAR_NAMES = ('all_vars', '2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
        '2016_2019_percent_upzoned', '2011_2016_average_years_since_upzoning',
        '2011_2019_average_years_since_upzoning',
        '2016_2019_average_years_since_upzoning', 'd_2011_2016_resid_units',
@@ -43,8 +43,8 @@ VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
        'd_2011_2019_percent_bachelor_degree_or_higher',
        'd_2011_2019_percent_car_commuters',
        'd_2011_2019_percent_public_transport_commuters',
-       'd_2011_2019_mean_public_transport_travel_time',
-       'd_2011_2019_mean_car_travel_time', 'orig_pop_density',
+       'd_2011_2019_percent_public_transport_trips_under_45_min',
+       'd_2011_2019_percent_car_trips_under_45_min', 'orig_pop_density',
        'orig_percent_non_hispanic_or_latino_white_alone',
        'orig_percent_non_hispanic_black_alone',
        'orig_percent_hispanic_any_race',
@@ -57,12 +57,15 @@ VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned',
        'orig_percent_of_households_in_same_house_year_ago',
        'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters',
        'orig_percent_public_transport_commuters',
-       'orig_mean_public_transport_travel_time', 'orig_mean_car_travel_time')
+       'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
+       
+# VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned', '2016_2019_percent_upzoned', '2011_2016_average_years_since_upzoning', '2011_2019_average_years_since_upzoning', '2016_2019_average_years_since_upzoning', 'd_2011_2016_resid_units', 'd_2011_2019_resid_units', 'd_2016_2019_resid_units', 'orig_percent_residential', 'orig_percent_limited_height', 'orig_percent_mixed_development', 'orig_percent_subsidized_properties', 'd_2011_2019_pop_density', 'd_2011_2019_resid_unit_density', 'd_2011_2019_per_capita_income', 'd_2011_2019_percent_non_hispanic_or_latino_white_alone', 'd_2011_2019_percent_non_hispanic_black_alone', 'd_2011_2019_percent_hispanic_any_race', 'd_2011_2019_percent_non_hispanic_asian_alone', 'd_2011_2019_percent_multi_family_units', 'd_2011_2019_percent_occupied_housing_units', 'd_2011_2019_median_gross_rent', 'd_2011_2019_median_home_value', 'd_2011_2019_percent_households_with_people_under_18', 'd_2011_2019_percent_of_households_in_same_house_year_ago', 'd_2011_2019_percent_bachelor_degree_or_higher', 'd_2011_2019_percent_car_commuters', 'd_2011_2019_percent_public_transport_commuters', 'd_2011_2019_percent_public_transport_trips_under_45_min', 'd_2011_2019_percent_car_trips_under_45_min', 'd_2011_2016_pop_density', 'd_2011_2016_resid_unit_density', 'd_2011_2016_per_capita_income', 'd_2011_2016_percent_non_hispanic_or_latino_white_alone', 'd_2011_2016_percent_non_hispanic_black_alone', 'd_2011_2016_percent_hispanic_any_race', 'd_2011_2016_percent_non_hispanic_asian_alone', 'd_2011_2016_percent_multi_family_units', 'd_2011_2016_percent_occupied_housing_units', 'd_2011_2016_median_gross_rent', 'd_2011_2016_median_home_value', 'd_2011_2016_percent_households_with_people_under_18', 'd_2011_2016_percent_of_households_in_same_house_year_ago', 'd_2011_2016_percent_bachelor_degree_or_higher', 'd_2011_2016_percent_car_commuters', 'd_2011_2016_percent_public_transport_commuters', 'd_2011_2016_percent_public_transport_trips_under_45_min', 'd_2011_2016_percent_car_trips_under_45_min', 'd_2016_2019_pop_density', 'd_2016_2019_resid_unit_density', 'd_2016_2019_per_capita_income', 'd_2016_2019_percent_non_hispanic_or_latino_white_alone', 'd_2016_2019_percent_non_hispanic_black_alone', 'd_2016_2019_percent_hispanic_any_race', 'd_2016_2019_percent_non_hispanic_asian_alone', 'd_2016_2019_percent_multi_family_units', 'd_2016_2019_percent_occupied_housing_units', 'd_2016_2019_median_gross_rent', 'd_2016_2019_median_home_value', 'd_2016_2019_percent_households_with_people_under_18', 'd_2016_2019_percent_of_households_in_same_house_year_ago', 'd_2016_2019_percent_bachelor_degree_or_higher', 'd_2016_2019_percent_car_commuters', 'd_2016_2019_percent_public_transport_commuters', 'd_2016_2019_percent_public_transport_trips_under_45_min', 'd_2016_2019_percent_car_trips_under_45_min', 'orig_pop_density', 'orig_percent_non_hispanic_or_latino_white_alone', 'orig_percent_non_hispanic_black_alone', 'orig_percent_hispanic_any_race', 'orig_percent_non_hispanic_asian_alone', 'orig_median_age', 'orig_per_capita_income', 'orig_resid_unit_density', 'orig_percent_multi_family_units', 'orig_percent_occupied_housing_units', 'orig_median_gross_rent', 'orig_median_home_value', 'orig_percent_households_with_people_under_18', 'orig_percent_of_households_in_same_house_year_ago', 'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters', 'orig_percent_public_transport_commuters', 'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
 
 DELTAS = [("2011", "2019"), ("2011", "2016"), ("2016", "2019")]
 
 TRACT_DATA_YEARS = ["2011", "2016", "2019"]
 LOT_DATA_YEARS = [str(year) for year in range(2011, 2020)]
+# LOT_DATA_YEARS = ["2011", "2016", "2019"]
 
 CODE_TO_COUNTY = {
     "005": "BX",
@@ -78,6 +81,8 @@ COUNTY_TO_CODE = {
     "QN": "081",
     "SI": "085"
 }
+SQFT_TO_SQKM = 10763910.41671
+
 
 def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
              verbose=False) -> Tuple[pd.DataFrame, List[pd.DataFrame], pd.DataFrame]:
@@ -97,14 +102,7 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
     Tuple
         Lot data DF, tract data DFs, and a combined DF for use with semopy models.
     """
-    # Load tract data. 
-    tract_dfs = _get_tract_data()
-    print("Tract data collected!")
 
-    # Load lot data. 
-    lot_df = _get_lot_data()
-    print("Lot data collected!")
-    # lot_df.to_csv("lot_data.csv")
     # Load/parse tract data.
     if verbose:
         print("Collecting tract data... ", end="")
@@ -137,20 +135,24 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
         lot_df = lot_data
         if verbose:
             print("Using provided.")
-    lot_df.set_index("BBL", inplace=True)
-
+    try:
+        lot_df.set_index("BBL", inplace=True)
+    except:
+        pass
 
     # Create dictionary which holds all lot BBL numbers corresponding to each tract ITZ_GEOID. 
-    # tracts_to_lots = {}
-    # for value in tract_dfs[0].index:
-    #     tracts_to_lots[value] = []
-    # for index, row in lot_df.iterrows():
-    #     tracts_to_lots[row["ITZ_GEOID"]].append(index)
-    # print("Tracts to lots created!")
-    # with open("tract_to_lot_list.txt", "w") as f:
-    #     f.write(str(tracts_to_lots))
-    with open(TRACTS_TO_LOTS_PATH, "r") as f:
-        tracts_to_lots = json.load(f)
+    tracts_to_lots = {}
+    for value in tract_dfs[0].index:
+        tracts_to_lots[value] = []
+    for index, row in lot_df.iterrows():
+        # print(row)
+        # print(lot_df.columns)
+        tracts_to_lots[row["ITZ_GEOID"]].append(index)
+    print("Tracts to lots created!")
+    with open(TRACTS_TO_LOTS_PATH, "w") as f:
+        json.dump(tracts_to_lots, f)
+    # with open(TRACTS_TO_LOTS_PATH, "r") as f:
+    #     tracts_to_lots = json.load(f)
 
     # Delete tracts without lots.  
     tracts_to_delete = []
@@ -184,7 +186,7 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
     model_df = pd.concat([tract_lot_data, tract_deltas, tract_dfs[0]], axis=1)
     if verbose:
         print("Done!")
-    model_df.to_csv("itz-data.csv")
+    # model_df.to_csv("itz-data.csv")
     return lot_df, tract_dfs, model_df
 
 
@@ -256,6 +258,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
         # Load ACS economic data.  
         # Some tracts randomly have their value for per_capita_income set to 'N' even though that's not reflected in the data
         economic = pd.read_csv(ACS_ECONOMIC_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "N"])
+        # economic = pd.read_csv(ACS_ECONOMIC_PATH % year, skiprows=[1], na_values=["(X)", "-", "**"])
         # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(economic)
         economic.set_index("ITZ_GEOID", inplace=True)
@@ -263,6 +266,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
         # Load dictionary which maps ACS codes to columns
         with open("in-the-zone-data/acs/code-to-column-economic-data-"+str(year)+".txt", "r") as f:
             code_to_column = eval(f.read())
+        print(economic.loc[economic[code_to_column['Estimate!!INCOME AND BENEFITS (IN '+ year +' INFLATION-ADJUSTED DOLLARS)!!Per capita income (dollars)']] == "N"])
         tract_df["per_capita_income"] = economic[code_to_column['Estimate!!INCOME AND BENEFITS (IN '+ year +' INFLATION-ADJUSTED DOLLARS)!!Per capita income (dollars)']].astype(float)
         
         del economic
@@ -271,6 +275,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
 
         # Load ACS housing data.  
         housing = pd.read_csv(ACS_HOUSING_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "2,000+", "3,500+", "1,000,000+", "10,000-", "2,000,000+"])
+        # housing = pd.read_csv(ACS_HOUSING_PATH % year, skiprows=[1], na_values=["(X)", "-", "**"])
         # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(housing)
         housing.set_index("ITZ_GEOID", inplace=True)
@@ -331,6 +336,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
 
         # Load ACS transportation data.  
         transportation = pd.read_csv(ACS_TRANSPORTATION_PATH % year, skiprows=[1], na_values=["(X)", "-", "**", "N"])
+        # transportation = pd.read_csv(ACS_TRANSPORTATION_PATH % year, skiprows=[1], na_values=["(X)", "-", "**"])
         # Create ITZ_GEOID column and sort it so it aligns with tract_df index. 
         _add_tract_ids(transportation)
         transportation.set_index("ITZ_GEOID", inplace=True)
@@ -418,7 +424,9 @@ def _get_tract_data() -> List[pd.DataFrame]:
         for tract_id in tract_area_df.index:
             tract_area = tract_area_df.at[tract_id, "area"]
             tract_df["pop_density"][tract_id] /= tract_area
+            tract_df["pop_density"][tract_id] *= SQFT_TO_SQKM
             tract_df["resid_unit_density"][tract_id] /= tract_area
+            tract_df["resid_unit_density"][tract_id] *= SQFT_TO_SQKM
 
         print("Tract transportation data collected")
 
@@ -501,6 +509,7 @@ def _get_lot_data() -> pd.DataFrame:
 
     del starting_pluto
 
+
     for year in LOT_DATA_YEARS:
         print("Beginning: ", year)
         try:
@@ -518,11 +527,15 @@ def _get_lot_data() -> pd.DataFrame:
         pluto_df.sort_index()
         pluto_df = pluto_df.loc[lot_df.index.intersection(pluto_df.index)]
         # pluto_df = pluto_df.loc[lot_df.index]
-        print(pluto_df)
+        # print(pluto_df)
         try:
             lot_df["land_use" + year] = pluto_df["LandUse"]
+            print(100*len(pluto_df[(pluto_df["LandUse"] == "01") | (pluto_df["LandUse"] == "02") | (pluto_df["LandUse"] == "03") | (pluto_df["LandUse"] == "04") | (pluto_df["LandUse"] == "1") | (pluto_df["LandUse"] == "2") | (pluto_df["LandUse"] == "3") | (pluto_df["LandUse"] == "4")])/len(pluto_df), "percentage!")
         except:
             lot_df["land_use" + year] = pluto_df["landuse"]
+            print(100*len(pluto_df[(pluto_df["landuse"] == "01") | (pluto_df["landuse"] == "02") | (pluto_df["landuse"] == "03") | (pluto_df["landuse"] == "04") | (pluto_df["landuse"] == "1") | (pluto_df["landuse"] == "2") | (pluto_df["landuse"] == "3") | (pluto_df["landuse"] == "4")])/len(pluto_df), "percentage!")
+        lot_df["land_use"+year].to_csv("land_use"+year+".csv")
+            # print(len(pluto_df[pluto_df["landuse"] < 5])/len(pluto_df), "percentage!")
         # except:
         #     print("EXCEPTED AT LINE 281")
         #     continue
@@ -543,9 +556,14 @@ def _get_lot_data() -> pd.DataFrame:
             except:
                 lot_df["max_resid_far" + year] = pluto_df["residfar"]
         try:
-            lot_df["mixed_development" + year] = pluto_df["landuse"] == "4"
+            lot_df["mixed_development" + year] = (pluto_df["landuse"] == "4") | (pluto_df["landuse"] == "04")
+            print(pluto_df.loc[(pluto_df["landuse"] == "4") | (pluto_df["landuse"] == "04")]["landuse"], " is there mixed development")
         except KeyError:
-            lot_df["mixed_development" + year] = pluto_df["LandUse"] == "4"
+            lot_df["mixed_development" + year] = (pluto_df["LandUse"] == "4") | (pluto_df["LandUse"] == "04")
+            print(pluto_df.loc[(pluto_df["LandUse"] == "4") | (pluto_df["LandUse"] == "04")]["LandUse"], " is there mixed development")
+        lot_df["mixed_development"+year].to_csv("mixed_development"+year+".csv")
+        print(lot_df.loc[lot_df["mixed_development2011"] == True])
+
         try:
             lot_df["limited_height" + year] = pluto_df["ltdheight"].str.strip() != ''
         except KeyError:
@@ -555,6 +573,7 @@ def _get_lot_data() -> pd.DataFrame:
         except KeyError:
             lot_df["resid_units" + year] = pluto_df["UnitsRes"]
         lot_df["resid_units"+year].to_csv("resid_units"+year+".csv")
+        lot_df["mixed_development"+year].to_csv("mixed_development"+year+".csv")
 
         del pluto_df
     print("Lot Data year data collected!")
@@ -578,7 +597,8 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
         "orig_percent_residential",
         "orig_percent_limited_height",
         "orig_percent_mixed_development",
-        "orig_percent_subsidized_properties"
+        "orig_percent_subsidized_properties",
+        "orig_percent_multi_family_units",
     ])
     for delta in DELTAS:
         print("Now working on: ", delta)
@@ -620,26 +640,35 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
                 tract_lot_data.at[tract, start + "_" + end + "_average_years_since_upzoning"] = sum(years_since_upzoned)/len(years_since_upzoned)
             tract_lot_data.at[tract, "d_" + start + "_" + end + "_resid_units"] = residential_units_end-residential_units_start
 
-    land_use_lots = 0
+
     for tract, lot_list in tracts_to_lots.items():
+        land_use_lots = 0
         residential = 0
         limited_height = 0
         mixed_development = 0
         for lot in lot_list:    
             # 1 corresponds to one/two family, 2 and 3 correspond to multi-family, 4 corresponds to mixed_resid/comm
-            try:
+            # try:
+            if lot_df["land_use2011"][lot].strip() != '':
                 if int(lot_df["land_use2011"][lot]) < 5:
                     residential += 1
                 land_use_lots += 1
-            except ValueError:
-                pass
+                # print(lot_df["mixed_development2011"][lot])
+                # print(type(lot_df["mixed_development2011"][lot]))
+                if lot_df["mixed_development2011"][lot].astype(bool) == True:
+                    mixed_development += 1
+            # except ValueError:
+                # pass
             if lot_df["limited_height2011"][lot] == True:
                 limited_height += 1
-            if lot_df["mixed_development2011"][lot] == True:
-                mixed_development += 1
-        tract_lot_data.at[tract, "orig_percent_residential"] = 100 * residential/land_use_lots
-        tract_lot_data.at[tract, "orig_percent_mixed_development"] = mixed_development/land_use_lots
-        tract_lot_data.at[tract, "orig_percent_limited_height"] = limited_height/len(lot_list)
+        try:
+            tract_lot_data.at[tract, "orig_percent_residential"] = 100 * residential/land_use_lots
+            tract_lot_data.at[tract, "orig_percent_mixed_development"] = 100 * mixed_development/land_use_lots
+        except:
+            print("TRACT WITH NO LAND USE LOTS??", tract)
+            tract_lot_data.at[tract, "orig_percent_residential"] = 0
+            tract_lot_data.at[tract, "orig_percent_mixed_development"] = 0
+        tract_lot_data.at[tract, "orig_percent_limited_height"] = 100 * limited_height/len(lot_list)
 
     subsidized_property_by_tract = pd.read_csv(SUBSIDIZED_PROPERTIES_PATH)["tract_10"].value_counts(sort=False)
     subsidized_property_by_geoid = {}
