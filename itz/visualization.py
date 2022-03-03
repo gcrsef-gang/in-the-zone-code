@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import math
 import semopy
+import seaborn as sn
 
 from .model import ModelName
 
@@ -35,16 +36,22 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: b
 
     # fit, stats, *args = np.polyfit(X, Y, 2, full=True)
     fit, stats, *args = np.polyfit(X, Y, 1, full=True)
-    # print(np.polyfit(X,Y,1,full=True))
-    # slope, intercept, residuals = np.polyfit(X, Y, 1, full=True)
-    # slope, intercept, residuals = np.polyfit(X, Y, 1, full=True)
-    # print(fit)
-    # print(stats)
 
+    x_average = data[x].sum()/len(data[x])
+    y_average = data[y].sum()/len(data[y])
+    print(f"X Average: {x_average}")
+    print(f"Y Average: {y_average}")
+    print(fit[0], "slope", fit[1], "intercept")
+    
+    total_sum_of_squares = data[y]-y_average
+    total_sum_of_squares *= total_sum_of_squares
+    r_squared = 1 - stats[0]/total_sum_of_squares.sum()
+    print("R squared", r_squared)
+    r = np.corrcoef(X, Y)[0][1]
+    print("R (correlation)", r)
     # fit here is actually a scalar
     plt.plot(X, (fit[0] * np.asarray(X) + fit[1]), '-r')
-    # plt.plot(X, (fit[0] * np.asarray(X.apply(lambda x: x*x)) + fit[1]*np.asarray(X)+fit[2]), '-r')
-    # plt.plot(X, (slope * np.asarray(X) + intercept), '-r')
+
     if log_x:
         plt.xlabel("log_"+x)
     else:
@@ -54,9 +61,27 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: b
     else:
         plt.ylabel(y)
     plt.scatter(X, Y)
+    plt.title(f"R^2: {round(r_squared, 3)} r: {round(r, 3)} Equation: {round(fit[0],5)}x + {round(fit[1],3)}")
     plt.savefig(path)
+    plt.clf()
+    # print(np.corrcoef(dat a))
     return stats
 
+def make_correlation_matrix(data: pd.DataFrame, output_path: str, path: str):
+    x = "2011_2019_percent_upzoned"
+    logged = data[x][data[x].notnull()][data[x] > 0].apply(math.log)
+    data[x] = logged
+    x = data.corr()
+    # x.to_csv("correlation_matrix.csv")
+    x["d_2011_2019_pop_density"].to_csv("d_2011_2019_pop_density_correlations.csv")
+    x.to_csv(output_path)
+    # plt.imshow(x)
+    plt.figure(figsize=(40,40))
+    sn.heatmap(x, cmap='coolwarm')
+    # plt.savefig("test.png")
+    if path:
+        plt.savefig(path)
+    return x
 
 
 def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str):
@@ -89,6 +114,8 @@ def make_histogram(x: str, data: pd.DataFrame, path: str):
     # plt.hist((data[x][data[x] != 0]))
     plt.savefig(path)
     plt.clf()
+    print(data[x].sum()/len(data[x]))
+    print(f"Average: {data[x].sum()/len(data[x])}")
 
 
 def make_map_vis(geoset, values, path):

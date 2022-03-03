@@ -59,6 +59,40 @@ VAR_NAMES = ('all_vars', '2011_2016_percent_upzoned', '2011_2019_percent_upzoned
        'orig_percent_public_transport_commuters',
        'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
        
+RESPONSE_VARS = ('d_2011_2016_resid_units',
+       'd_2011_2019_resid_units', 'd_2016_2019_resid_units',
+       'd_2011_2019_pop_density', 'd_2011_2019_resid_unit_density',
+       'd_2011_2019_per_capita_income',
+       'd_2011_2019_percent_non_hispanic_or_latino_white_alone',
+       'd_2011_2019_percent_non_hispanic_black_alone',
+       'd_2011_2019_percent_hispanic_any_race',
+       'd_2011_2019_percent_non_hispanic_asian_alone',
+       'd_2011_2019_percent_multi_family_units',
+       'd_2011_2019_percent_occupied_housing_units',
+       'd_2011_2019_median_gross_rent', 'd_2011_2019_median_home_value',
+       'd_2011_2019_percent_households_with_people_under_18',
+       'd_2011_2019_percent_of_households_in_same_house_year_ago',
+       'd_2011_2019_percent_bachelor_degree_or_higher',
+       'd_2011_2019_percent_car_commuters',
+       'd_2011_2019_percent_public_transport_commuters',
+       'd_2011_2019_percent_public_transport_trips_under_45_min',
+       'd_2011_2019_percent_car_trips_under_45_min')
+
+CONTROL_VARS = ('orig_pop_density',
+       'orig_percent_non_hispanic_or_latino_white_alone',
+       'orig_percent_non_hispanic_black_alone',
+       'orig_percent_hispanic_any_race',
+       'orig_percent_non_hispanic_asian_alone', 'orig_median_age',
+       'orig_per_capita_income', 'orig_resid_unit_density',
+       'orig_percent_multi_family_units',
+       'orig_percent_occupied_housing_units', 'orig_median_gross_rent',
+       'orig_median_home_value',
+       'orig_percent_households_with_people_under_18',
+       'orig_percent_of_households_in_same_house_year_ago',
+       'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters',
+       'orig_percent_public_transport_commuters',
+       'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
+       
 # VAR_NAMES = ('2011_2016_percent_upzoned', '2011_2019_percent_upzoned', '2016_2019_percent_upzoned', '2011_2016_average_years_since_upzoning', '2011_2019_average_years_since_upzoning', '2016_2019_average_years_since_upzoning', 'd_2011_2016_resid_units', 'd_2011_2019_resid_units', 'd_2016_2019_resid_units', 'orig_percent_residential', 'orig_percent_limited_height', 'orig_percent_mixed_development', 'orig_percent_subsidized_properties', 'd_2011_2019_pop_density', 'd_2011_2019_resid_unit_density', 'd_2011_2019_per_capita_income', 'd_2011_2019_percent_non_hispanic_or_latino_white_alone', 'd_2011_2019_percent_non_hispanic_black_alone', 'd_2011_2019_percent_hispanic_any_race', 'd_2011_2019_percent_non_hispanic_asian_alone', 'd_2011_2019_percent_multi_family_units', 'd_2011_2019_percent_occupied_housing_units', 'd_2011_2019_median_gross_rent', 'd_2011_2019_median_home_value', 'd_2011_2019_percent_households_with_people_under_18', 'd_2011_2019_percent_of_households_in_same_house_year_ago', 'd_2011_2019_percent_bachelor_degree_or_higher', 'd_2011_2019_percent_car_commuters', 'd_2011_2019_percent_public_transport_commuters', 'd_2011_2019_percent_public_transport_trips_under_45_min', 'd_2011_2019_percent_car_trips_under_45_min', 'd_2011_2016_pop_density', 'd_2011_2016_resid_unit_density', 'd_2011_2016_per_capita_income', 'd_2011_2016_percent_non_hispanic_or_latino_white_alone', 'd_2011_2016_percent_non_hispanic_black_alone', 'd_2011_2016_percent_hispanic_any_race', 'd_2011_2016_percent_non_hispanic_asian_alone', 'd_2011_2016_percent_multi_family_units', 'd_2011_2016_percent_occupied_housing_units', 'd_2011_2016_median_gross_rent', 'd_2011_2016_median_home_value', 'd_2011_2016_percent_households_with_people_under_18', 'd_2011_2016_percent_of_households_in_same_house_year_ago', 'd_2011_2016_percent_bachelor_degree_or_higher', 'd_2011_2016_percent_car_commuters', 'd_2011_2016_percent_public_transport_commuters', 'd_2011_2016_percent_public_transport_trips_under_45_min', 'd_2011_2016_percent_car_trips_under_45_min', 'd_2016_2019_pop_density', 'd_2016_2019_resid_unit_density', 'd_2016_2019_per_capita_income', 'd_2016_2019_percent_non_hispanic_or_latino_white_alone', 'd_2016_2019_percent_non_hispanic_black_alone', 'd_2016_2019_percent_hispanic_any_race', 'd_2016_2019_percent_non_hispanic_asian_alone', 'd_2016_2019_percent_multi_family_units', 'd_2016_2019_percent_occupied_housing_units', 'd_2016_2019_median_gross_rent', 'd_2016_2019_median_home_value', 'd_2016_2019_percent_households_with_people_under_18', 'd_2016_2019_percent_of_households_in_same_house_year_ago', 'd_2016_2019_percent_bachelor_degree_or_higher', 'd_2016_2019_percent_car_commuters', 'd_2016_2019_percent_public_transport_commuters', 'd_2016_2019_percent_public_transport_trips_under_45_min', 'd_2016_2019_percent_car_trips_under_45_min', 'orig_pop_density', 'orig_percent_non_hispanic_or_latino_white_alone', 'orig_percent_non_hispanic_black_alone', 'orig_percent_hispanic_any_race', 'orig_percent_non_hispanic_asian_alone', 'orig_median_age', 'orig_per_capita_income', 'orig_resid_unit_density', 'orig_percent_multi_family_units', 'orig_percent_occupied_housing_units', 'orig_median_gross_rent', 'orig_median_home_value', 'orig_percent_households_with_people_under_18', 'orig_percent_of_households_in_same_house_year_ago', 'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters', 'orig_percent_public_transport_commuters', 'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
 
 DELTAS = [("2011", "2019"), ("2011", "2016"), ("2016", "2019")]
@@ -81,8 +115,7 @@ COUNTY_TO_CODE = {
     "QN": "081",
     "SI": "085"
 }
-SQFT_TO_SQKM = 10763910.41671
-
+SQM_TO_SQKM = 1000000
 
 def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
              verbose=False) -> Tuple[pd.DataFrame, List[pd.DataFrame], pd.DataFrame]:
@@ -424,9 +457,9 @@ def _get_tract_data() -> List[pd.DataFrame]:
         for tract_id in tract_area_df.index:
             tract_area = tract_area_df.at[tract_id, "area"]
             tract_df["pop_density"][tract_id] /= tract_area
-            tract_df["pop_density"][tract_id] *= SQFT_TO_SQKM
+            tract_df["pop_density"][tract_id] *= SQM_TO_SQKM
             tract_df["resid_unit_density"][tract_id] /= tract_area
-            tract_df["resid_unit_density"][tract_id] *= SQFT_TO_SQKM
+            tract_df["resid_unit_density"][tract_id] *= SQM_TO_SQKM
 
         print("Tract transportation data collected")
 
@@ -598,7 +631,6 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
         "orig_percent_limited_height",
         "orig_percent_mixed_development",
         "orig_percent_subsidized_properties",
-        "orig_percent_multi_family_units",
     ])
     for delta in DELTAS:
         print("Now working on: ", delta)

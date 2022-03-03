@@ -91,16 +91,58 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
     data = pd.read_csv(data_path)
     if y is None:
         if x == 'all_vars':
+            try:
+                os.mkdir("histogram-data/")
+            except FileExistsError:
+                pass
             for column in data.columns:
-                if column in ["Unnamed: 0","orig_percent_limited_height", "orig_percent_mixed_development"]:
+                if column.startswith("Unnamed") or column in ["all_vars"]:
                     continue
                 print("working on:", column)
-                itz.make_histogram(column, data, column+".png")
+                itz.make_histogram(column, data, "histogram-data/"+column+".png")
                 print("Histogram created:", column)
             return
         else:
-            return itz.make_histogram(x, data, img_path1)
-    regression_stats = itz.make_regression_plot(x, y, data, img_path1, log_x, log_y)
+            if img_path1:
+                return itz.make_histogram(x, data, img_path1)
+            else:
+                return itz.make_histogram(x, data, x+".png")
+    if img_path1:
+        regression_stats = itz.make_regression_plot(x, y, data, img_path1, log_x, log_y)
+    else:
+        try:
+            os.mkdir("regression-plots")
+        except FileExistsError:
+            pass
+        if y == "all_vars":
+            for column in data.columns:
+                if column.startswith("Unnamed") or column in ["all_vars"]:
+                    continue
+                print("working on:", x, column)
+                try:
+                    if log_x:
+                        os.mkdir("regression-plots/"+column+"/")
+                    else:
+                        os.mkdir("regression-plots/"+column+"/")
+                except FileExistsError:
+                    pass
+                if log_x and log_y:
+                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+"log_"+x+"_"+"log_"+column+".png", log_x, log_y)
+                elif log_x:
+                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+"log_"+x+"_"+column+".png", log_x, log_y)
+                elif log_y:
+                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+x+"_"+"log_"+column+".png", log_x, log_y)
+                else:
+                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+x+"_"+column+".png", log_x, log_y)
+        else:
+            if log_x and log_y:
+                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+"log_"+x+"_"+"log_"+y+".png", log_x, log_y)
+            elif log_x:
+                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+"log_"+x+"_"+y+".png", log_x, log_y)
+            elif log_y:
+                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+x+"_"+"log_"+y+".png", log_x, log_y)
+            else:
+                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+x+"_"+y+".png", log_x, log_y)
     if img_path2:
         residual_stats = itz.make_residual_plot(x, y, data, img_path2, log_x, log_y)
         stats = {**regression_stats, **residual_stats}
@@ -110,6 +152,7 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
     else:
         # pass
         # **regression_stats is not a thing???
+        # print(regression_stats)
         return {"sum of squared_residuals":regression_stats[0]}
 
 
@@ -132,6 +175,9 @@ def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], ve
     model_data.to_csv(os.path.join(output_path, "itz-data.csv"))
     lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
 
+def _correlate(data_path: str, output_path: str, img_path: str, verbose):
+    data = pd.read_csv(data_path)
+    itz.make_correlation_matrix(data, output_path, img_path)
 
 if __name__ == "__main__":
 
@@ -165,6 +211,12 @@ if __name__ == "__main__":
     parse_parser.add_argument("--lot_data_path", required=False)
     parse_parser.add_argument("--tract_data_paths", action="extend", required=False)
     parse_parser.set_defaults(func=_parse)
+
+    correlate_parser = subparsers.add_parser("correlate")
+    correlate_parser.add_argument("data_path")
+    correlate_parser.add_argument("output_path")
+    correlate_parser.add_argument("--img_path", required=False)
+    correlate_parser.set_defaults(func=_correlate)
 
     args = parser.parse_args()
     print(args)
