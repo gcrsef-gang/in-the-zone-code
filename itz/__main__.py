@@ -114,16 +114,30 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
             os.mkdir("regression-plots")
         except FileExistsError:
             pass
-        if y == "all_vars":
+        if x == "all_vars" and y == "all_vars":
+            # for x_column in itz.data.CONTROL_VARS.extend(["2011_2019_percent_upzoned","2016_2019_percent_upzoned","2011_2016_percent_upzoned"]):
+            for x_column in itz.data.INDEPENDENT_VARS:
+                for y_column in itz.data.DEPENDENT_VARS:
+                    print("\nworking on:", x_column, y_column)
+                    try:
+                        os.mkdir("regression-plots/"+y_column+"/")
+                    except FileExistsError:
+                        pass
+                    if log_x and log_y:
+                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+"log_"+x_column+"_"+"log_"+y_column+".png", log_x, log_y)
+                    elif log_x:
+                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+"log_"+x_column+"_"+y_column+".png", log_x, log_y)
+                    elif log_y:
+                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+x_column+"_"+"log_"+y_column+".png", log_x, log_y)
+                    else:
+                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+x_column+"_"+y_column+".png", log_x, log_y)
+        elif y == "all_vars":
             for column in data.columns:
                 if column.startswith("Unnamed") or column in ["all_vars"]:
                     continue
                 print("working on:", x, column)
                 try:
-                    if log_x:
-                        os.mkdir("regression-plots/"+column+"/")
-                    else:
-                        os.mkdir("regression-plots/"+column+"/")
+                    os.mkdir("regression-plots/"+column+"/")
                 except FileExistsError:
                     pass
                 if log_x and log_y:

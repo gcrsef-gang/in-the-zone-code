@@ -8,6 +8,7 @@ import pandas as pd
 import math
 import semopy
 import seaborn as sn
+import scipy
 
 from .model import ModelName
 
@@ -16,14 +17,15 @@ def make_sem_diagram(model_name: ModelName, path: str):
     """Saves a diagram of an SEM to a PNG image.
     """
     # semplot()
-
+def log_transformation(data: pd.Series):
+    pass
 
 def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: bool, log_y: bool):
     """Creates a scatterplot with LSRL and returns descriptive statistics as a dictionary.
     """
     if log_x and log_y:
-        X = data[x][data[x].notnull()][data[y].notnull()][data[x] > 0][data[y] > 0].apply(math.log)
-        Y = data[y][data[x].notnull()][data[y].notnull()][data[x] > 0][data[y] > 0].apply(math.log)
+        X = data[x][data[x].notnull()][data[y].notnull()][data[x] > 0][data[y] > 0].transform(math.log)
+        Y = data[y][data[x].notnull()][data[y].notnull()][data[x] > 0][data[y] > 0].transform(math.log)
     elif log_x:
         X = data[x][data[x].notnull()][data[y].notnull()][data[x] > 0].apply(math.log)
         Y = data[y][data[x].notnull()][data[y].notnull()][data[x] > 0]
@@ -37,18 +39,21 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: b
     # fit, stats, *args = np.polyfit(X, Y, 2, full=True)
     fit, stats, *args = np.polyfit(X, Y, 1, full=True)
 
-    x_average = data[x].sum()/len(data[x])
-    y_average = data[y].sum()/len(data[y])
+    x_average = X.sum()/len(X)
+    y_average = Y.sum()/len(Y)
     print(f"X Average: {x_average}")
     print(f"Y Average: {y_average}")
     print(fit[0], "slope", fit[1], "intercept")
     
-    total_sum_of_squares = data[y]-y_average
+    total_sum_of_squares = Y-y_average
     total_sum_of_squares *= total_sum_of_squares
     r_squared = 1 - stats[0]/total_sum_of_squares.sum()
     print("R squared", r_squared)
-    r = np.corrcoef(X, Y)[0][1]
+    r, two_tailed_p = scipy.stats.pearsonr(X,Y)
+    # r = np.corrcoef(X, Y)[0][1]
     print("R (correlation)", r)
+    print("Two-tailed p value", two_tailed_p)
+
     # fit here is actually a scalar
     plt.plot(X, (fit[0] * np.asarray(X) + fit[1]), '-r')
 
@@ -61,7 +66,7 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: b
     else:
         plt.ylabel(y)
     plt.scatter(X, Y)
-    plt.title(f"R^2: {round(r_squared, 3)} r: {round(r, 3)} Equation: {round(fit[0],5)}x + {round(fit[1],3)}")
+    plt.title(f"R^2: {round(r_squared, 3)} r: {round(r, 3)} p: {round(two_tailed_p, 5)} Num Obsv: {len(X)} Equation: {round(fit[0],5)}x + {round(fit[1],3)}")
     plt.savefig(path)
     plt.clf()
     # print(np.corrcoef(dat a))
@@ -109,13 +114,13 @@ def make_histogram(x: str, data: pd.DataFrame, path: str):
     # plt.hist((data[x][data[x] != 0]))
     # plt.hist((data[x][data[x] != 0]), bins=200)
     plt.hist(data[x], bins=200)
-    plt.title(x)
     # plt.hist((data[x][data[x] != 0]), bins=np.arange(-200, 200, 0.5))
     # plt.hist((data[x][data[x] != 0]))
+    average = data[x].sum()/len(data[x])
+    print(f"Average: {average}")
+    plt.title(f"{x}  Average: {average}")
     plt.savefig(path)
     plt.clf()
-    print(data[x].sum()/len(data[x]))
-    print(f"Average: {data[x].sum()/len(data[x])}")
 
 
 def make_map_vis(geoset, values, path):
