@@ -219,6 +219,10 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
         columns[column] = "orig_" + column
     tract_dfs[0].rename(mapper=columns, axis="columns", inplace=True)
     model_df = pd.concat([tract_lot_data, tract_deltas, tract_dfs[0]], axis=1)
+    
+    model_df.drop(columns=["Unnamed: 0.4", "Unnamed: 0.3","Unnamed: 0.2","Unnamed: 0.1"], inplace=True)
+    model_df.set_index("Unnamed: 0", inplace=True)
+    model_df.index.rename("ITZ_GEOID", inplace=True)
     if verbose:
         print("Done!")
     # model_df.to_csv("itz-data.csv")

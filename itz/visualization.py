@@ -9,6 +9,8 @@ import math
 import semopy
 import seaborn as sn
 import scipy
+from typing import List
+
 
 from .model import ModelName
 
@@ -123,26 +125,59 @@ def make_histogram(x: str, data: pd.DataFrame, path: str):
     plt.clf()
 
 
-def make_map_vis(geoset, values, path):
+def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]):
     """Creates an html file containing an interactive choropleth map based on the specified values
     """
 
-    bins = list(values.quantile([0, 0.25, 0.5, 0.75, 1]))
 
     # determine location by geoset?
-    m = folium.Map(location=[48, -102], zoom_start=3)
+    m = folium.Map(location=[40.7, -74], zoom_start=10)
 
-    folium.Choropleth(
-        geo_data=geoset,
-        data=values,
-        columns=["State", "Unemployment"],
-        key_on="feature.id",
-        fill_color="BuPu",
-        fill_opacity=0.7,
-        line_opacity=0.5,
-        legend_name="Unemployment Rate (%)",
-        bins=bins,
-        reset=True,
-    ).add_to(m)
+    to_remove = []
+    for tract in geoset['features']:
+        # print(data["ITZ_GEOID"], tract["id"])
+        if tract["properties"]["ITZ_GEOID"] not in data["ITZ_GEOID"].values:
+            to_remove.append(tract)
 
+    for tract in to_remove:
+        geoset['features'].remove(tract)
+
+    # for index in data.index:  
+    # for tract in geoset['features']:
+        # tract['properties']['ITZ_GEOID'] = data.loc[tract['id'], "ITZ_GEOID"] + "\n"
+    # print(len(geoset['features']))
+    for column in columns[1:]:
+        if "upzoned" in column:
+            bins = [0,0.1, 1,3,5,10,25,100]
+        else:
+            bins = list(data[column].quantile([0, .25, .5, .75, 1]))
+        # bins.append(0)
+        # bins = sorted(bins)
+        choropleth = folium.Choropleth(
+            geo_data=geoset,
+            data=data,
+            columns=["ITZ_GEOID", column],
+            key_on="feature.properties.ITZ_GEOID",
+            fill_color="PuBuGn",
+            fill_opacity=0.7,
+            line_opacity=0.5,
+            legend_name=column,
+            bins=bins,
+            reset=True,
+            name=column,
+            highlight=True,
+        ).add_to(m)
+        # prepare the customised text
+        tooltip_text = {}
+        for index in data.index:
+            tooltip_text[data.loc[index, "ITZ_GEOID"]] = str(round(data.loc[index, column], 3))
+        for tract in geoset['features']:
+            tract['properties'][column] = tooltip_text[tract['properties']['ITZ_GEOID']]
+        # Append a tooltip column with customised text
+        # Display Region Label
+        choropleth.geojson.add_child(
+            folium.features.GeoJsonTooltip(columns)
+            # folium.features.GeoJsonTooltip(columns, aliases=columns)
+        )
+    folium.LayerControl().add_to(m)
     m.save(path)

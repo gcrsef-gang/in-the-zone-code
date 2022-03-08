@@ -62,6 +62,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import json
 
 import itz
 
@@ -193,6 +194,17 @@ def _correlate(data_path: str, output_path: str, img_path: str, verbose):
     data = pd.read_csv(data_path)
     itz.make_correlation_matrix(data, output_path, img_path)
 
+def _visualize(geodata_path: str, data_path: str, output_path: str, columns: List[str], verbose):
+    with open(geodata_path, "r") as f:
+        geodata = json.load(f)
+    with open(data_path, "r") as f:
+        data = pd.read_csv(data_path)
+    columns.insert(0, "ITZ_GEOID")
+    if output_path:
+        itz.make_map_vis(geodata, data, output_path, columns)
+    else:
+        itz.make_map_vis(geodata, data, "vis.html", columns)
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(usage=__doc__)
@@ -231,6 +243,13 @@ if __name__ == "__main__":
     correlate_parser.add_argument("output_path")
     correlate_parser.add_argument("--img_path", required=False)
     correlate_parser.set_defaults(func=_correlate)
+
+    vis_parser = subparsers.add_parser("vis")
+    vis_parser.add_argument("geodata_path")
+    vis_parser.add_argument("data_path")
+    vis_parser.add_argument("--columns", action="extend", nargs="+")
+    vis_parser.add_argument("--output_path", required=False)
+    vis_parser.set_defaults(func=_visualize)
 
     args = parser.parse_args()
     print(args)
