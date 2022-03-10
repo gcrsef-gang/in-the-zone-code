@@ -134,9 +134,14 @@ def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]
     m = folium.Map(location=[40.7, -74], zoom_start=10)
 
     to_remove = []
+    # for tract in geoset['features']:
+    #     # print(data["ITZ_GEOID"], tract["id"])
+    #     if tract["properties"]["ITZ_GEOID"] not in data["ITZ_GEOID"].values:
+    #         to_remove.append(tract)
+
     for tract in geoset['features']:
-        # print(data["ITZ_GEOID"], tract["id"])
-        if tract["properties"]["ITZ_GEOID"] not in data["ITZ_GEOID"].values:
+        # print(data["BBL"], tract["id"])
+        if tract["properties"]["BBL"] not in data["BBL"].values:
             to_remove.append(tract)
 
     for tract in to_remove:
@@ -156,8 +161,10 @@ def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]
         choropleth = folium.Choropleth(
             geo_data=geoset,
             data=data,
-            columns=["ITZ_GEOID", column],
-            key_on="feature.properties.ITZ_GEOID",
+            # columns=["ITZ_GEOID", column],
+            columns=["BBL", column],
+            # key_on="feature.properties.ITZ_GEOID",
+            key_on="feature.properties.BBL",
             fill_color="PuBuGn",
             fill_opacity=0.7,
             line_opacity=0.5,
@@ -170,9 +177,11 @@ def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]
         # prepare the customised text
         tooltip_text = {}
         for index in data.index:
-            tooltip_text[data.loc[index, "ITZ_GEOID"]] = str(round(data.loc[index, column], 3))
+            # tooltip_text[data.loc[index, "ITZ_GEOID"]] = str(round(data.loc[index, column], 3))
+            tooltip_text[data.loc[index, "BBL"]] = str(round(data.loc[index, column], 3))
         for tract in geoset['features']:
-            tract['properties'][column] = tooltip_text[tract['properties']['ITZ_GEOID']]
+            # tract['properties'][column] = tooltip_text[tract['properties']['ITZ_GEOID']]
+            tract['properties'][column] = tooltip_text[tract['properties']['BBL']]
         # Append a tooltip column with customised text
         # Display Region Label
         choropleth.geojson.add_child(
