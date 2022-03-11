@@ -90,6 +90,7 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
     Prints descriptive statistics.
     """
     data = pd.read_csv(data_path)
+    data.set_index("ITZ_GEOID", inplace=True)
     if y is None:
         if x == 'all_vars':
             try:
@@ -194,16 +195,16 @@ def _correlate(data_path: str, output_path: str, img_path: str, verbose):
     data = pd.read_csv(data_path)
     itz.make_correlation_matrix(data, output_path, img_path)
 
-def _visualize(geodata_path: str, data_path: str, output_path: str, columns: List[str], verbose):
+def _visualize(geodata_path: str, data_path: str, output_path: str, columns: List[str], lots: bool, verbose):
     with open(geodata_path, "r") as f:
         geodata = json.load(f)
     with open(data_path, "r") as f:
         data = pd.read_csv(data_path)
     columns.insert(0, "ITZ_GEOID")
     if output_path:
-        itz.make_map_vis(geodata, data, output_path, columns)
+        itz.make_map_vis(geodata, data, output_path, columns, int(lots)+1)
     else:
-        itz.make_map_vis(geodata, data, "vis.html", columns)
+        itz.make_map_vis(geodata, data, "vis.html", columns, int(lots)+1)
 
 if __name__ == "__main__":
 
@@ -247,8 +248,9 @@ if __name__ == "__main__":
     vis_parser = subparsers.add_parser("vis")
     vis_parser.add_argument("geodata_path")
     vis_parser.add_argument("data_path")
-    vis_parser.add_argument("--columns", action="extend", nargs="+")
+    vis_parser.add_argument("--columns", action="extend", nargs="+", required=True)
     vis_parser.add_argument("--output_path", required=False)
+    vis_parser.add_argument("--lots", required=False, default=False, action="store_true")
     vis_parser.set_defaults(func=_visualize)
 
     args = parser.parse_args()

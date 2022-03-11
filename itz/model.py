@@ -18,24 +18,24 @@ class ModelName(Enum):
 MODEL_NAMES = ("LONG_TERM", "SHORT_TERM_NO_CARBON_EMISSIONS", "SHORT_TERM_CARBON_EMISSIONS")
 
 MODEL_YEARS = {
-    ModelName.LONG_TERM: ("2011", "2019"),
-    ModelName.SHORT_TERM_CARBON_EMISSIONS: ("2011", "2016"),
-    ModelName.SHORT_TERM_NO_CARBON_EMISSIONS: ("2011", "2016")
+    ModelName.LONG_TERM: ("2010", "2018"),
+    # ModelName.SHORT_TERM_CARBON_EMISSIONS: ("2010", "2014"),
+    # ModelName.SHORT_TERM_NO_CARBON_EMISSIONS: ("2010", "2014")
 }
 
 
 DEPENDENT_VARIABLES = {
     ModelName.LONG_TERM: (
-        "d_2011_2019_percent_car_commuters",
-        "d_2011_2019_percent_car_commuters",
-        "d_2011_2019_percent_public_transport_commuters",
-        "d_2011_2019_percent_public_transport_trips_under_45_min",
-        "d_2011_2019_percent_car_trips_under_45_min",
-        "d_2011_2019_percent_non_hispanic_or_latino_white_alone",
-        "d_2011_2019_percent_occupied_housing_units",
-        "d_2011_2019_median_home_value",
-        "d_2011_2019_per_capita_income",
-        "d_2011_2019_median_gross_rent"),
+        "d_2010_2018_percent_car_commuters",
+        "d_2010_2018_percent_car_commuters",
+        "d_2010_2018_percent_public_transport_commuters",
+        "d_2010_2018_percent_public_transport_trips_under_45_min",
+        "d_2010_2018_percent_car_trips_under_45_min",
+        "d_2010_2018_percent_non_hispanic_or_latino_white_alone",
+        "d_2010_2018_percent_occupied_housing_units",
+        "d_2010_2018_median_home_value",
+        "d_2010_2018_per_capita_income",
+        "d_2010_2018_median_gross_rent"),
     ModelName.SHORT_TERM_CARBON_EMISSIONS: (),
     ModelName.SHORT_TERM_NO_CARBON_EMISSIONS: ()
 }

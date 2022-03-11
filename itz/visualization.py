@@ -75,12 +75,13 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: b
     return stats
 
 def make_correlation_matrix(data: pd.DataFrame, output_path: str, path: str):
-    x = "2011_2019_percent_upzoned"
-    logged = data[x][data[x].notnull()][data[x] > 0].apply(math.log)
-    data[x] = logged
+    # x = "2010_2018_percent_upzoned"
+    # logged = data[x][data[x].notnull()][data[x] > 0].apply(math.log)
+    # data[x] = logged
     x = data.corr()
+    print(len(data.columns))
     # x.to_csv("correlation_matrix.csv")
-    x["d_2011_2019_pop_density"].to_csv("d_2011_2019_pop_density_correlations.csv")
+    # x["d_2010_2018_pop_density"].to_csv("d_2010_2018_pop_density_correlations.csv")
     x.to_csv(output_path)
     # plt.imshow(x)
     plt.figure(figsize=(40,40))
@@ -118,6 +119,7 @@ def make_histogram(x: str, data: pd.DataFrame, path: str):
     plt.hist(data[x], bins=200)
     # plt.hist((data[x][data[x] != 0]), bins=np.arange(-200, 200, 0.5))
     # plt.hist((data[x][data[x] != 0]))
+    print(data[x], x)
     average = data[x].sum()/len(data[x])
     print(f"Average: {average}")
     plt.title(f"{x}  Average: {average}")
@@ -125,7 +127,7 @@ def make_histogram(x: str, data: pd.DataFrame, path: str):
     plt.clf()
 
 
-def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]):
+def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str], tracts: bool):
     """Creates an html file containing an interactive choropleth map based on the specified values
     """
 
@@ -134,15 +136,16 @@ def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]
     m = folium.Map(location=[40.7, -74], zoom_start=10)
 
     to_remove = []
-    # for tract in geoset['features']:
-    #     # print(data["ITZ_GEOID"], tract["id"])
-    #     if tract["properties"]["ITZ_GEOID"] not in data["ITZ_GEOID"].values:
-    #         to_remove.append(tract)
-
-    for tract in geoset['features']:
-        # print(data["BBL"], tract["id"])
-        if tract["properties"]["BBL"] not in data["BBL"].values:
-            to_remove.append(tract)
+    if tracts:
+        for tract in geoset['features']:
+            # print(data["ITZ_GEOID"], tract["id"])
+            if tract["properties"]["ITZ_GEOID"] not in data["ITZ_GEOID"].values:
+                to_remove.append(tract)
+    else:
+        for tract in geoset['features']:
+            # print(data["BBL"], tract["id"])
+            if tract["properties"]["BBL"] not in data["BBL"].values:
+                to_remove.append(tract)
 
     for tract in to_remove:
         geoset['features'].remove(tract)
@@ -158,30 +161,49 @@ def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]
             bins = list(data[column].quantile([0, .25, .5, .75, 1]))
         # bins.append(0)
         # bins = sorted(bins)
-        choropleth = folium.Choropleth(
-            geo_data=geoset,
-            data=data,
-            # columns=["ITZ_GEOID", column],
-            columns=["BBL", column],
-            # key_on="feature.properties.ITZ_GEOID",
-            key_on="feature.properties.BBL",
-            fill_color="PuBuGn",
-            fill_opacity=0.7,
-            line_opacity=0.5,
-            legend_name=column,
-            bins=bins,
-            reset=True,
-            name=column,
-            highlight=True,
-        ).add_to(m)
+        if tracts:
+            choropleth = folium.Choropleth(
+                geo_data=geoset,
+                data=data,
+                columns=["ITZ_GEOID", column],
+                key_on="feature.properties.ITZ_GEOID",
+                fill_color="PuBuGn",
+                fill_opacity=0.7,
+                line_opacity=0.5,
+                legend_name=column,
+                bins=bins,
+                reset=True,
+                name=column,
+                highlight=True,
+            ).add_to(m)
+        else:
+            choropleth = folium.Choropleth(
+                geo_data=geoset,
+                data=data,
+                columns=["BBL", column],
+                key_on="feature.properties.BBL",
+                fill_color="PuBuGn",
+                fill_opacity=0.7,
+                line_opacity=0.5,
+                legend_name=column,
+                bins=bins,
+                reset=True,
+                name=column,
+                highlight=True,
+            ).add_to(m)
+
         # prepare the customised text
         tooltip_text = {}
         for index in data.index:
-            # tooltip_text[data.loc[index, "ITZ_GEOID"]] = str(round(data.loc[index, column], 3))
-            tooltip_text[data.loc[index, "BBL"]] = str(round(data.loc[index, column], 3))
+            if tracts:
+                tooltip_text[data.loc[index, "ITZ_GEOID"]] = str(round(data.loc[index, column], 3))
+            else:
+                tooltip_text[data.loc[index, "BBL"]] = str(round(data.loc[index, column], 3))
         for tract in geoset['features']:
-            # tract['properties'][column] = tooltip_text[tract['properties']['ITZ_GEOID']]
-            tract['properties'][column] = tooltip_text[tract['properties']['BBL']]
+            if tracts:
+                tract['properties'][column] = tooltip_text[tract['properties']['ITZ_GEOID']]
+            else:
+                tract['properties'][column] = tooltip_text[tract['properties']['BBL']]
         # Append a tooltip column with customised text
         # Display Region Label
         choropleth.geojson.add_child(

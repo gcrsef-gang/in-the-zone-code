@@ -22,7 +22,8 @@ CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ('all_vars', '2010_2014_percent_upzoned', '2010_2018_percent_upzoned',
+VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned',
+        '2010_2014_percent_upzoned', '2010_2018_percent_upzoned',
        '2014_2018_percent_upzoned', 'd_2010_2014_resid_units',
        'd_2010_2018_resid_units', 'd_2014_2018_resid_units',
        'orig_percent_residential',
@@ -57,8 +58,7 @@ VAR_NAMES = ('all_vars', '2010_2014_percent_upzoned', '2010_2018_percent_upzoned
        'orig_percent_public_transport_commuters',
        'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
        
-DEPENDENT_VARS = ['d_2010_2014_resid_units',
-       'd_2010_2018_resid_units', 'd_2014_2018_resid_units',
+DEPENDENT_VARS = ['d_2010_2018_resid_units',
        'd_2010_2018_pop_density', 'd_2010_2018_resid_unit_density',
        'd_2010_2018_per_capita_income',
        'd_2010_2018_percent_non_hispanic_or_latino_white_alone',
@@ -95,7 +95,7 @@ INDEPENDENT_VARS = ['2010_2018_percent_upzoned', 'd_2010_2018_pop_density',
        
 # VAR_NAMES = ('2010_2014_percent_upzoned', '2010_2018_percent_upzoned', '2014_2018_percent_upzoned', 'd_2010_2014_resid_units', 'd_2010_2018_resid_units', 'd_2014_2018_resid_units', 'orig_percent_residential', 'orig_percent_mixed_development', 'orig_percent_subsidized_properties', 'd_2010_2018_pop_density', 'd_2010_2018_resid_unit_density', 'd_2010_2018_per_capita_income', 'd_2010_2018_percent_non_hispanic_or_latino_white_alone', 'd_2010_2018_percent_non_hispanic_black_alone', 'd_2010_2018_percent_hispanic_any_race', 'd_2010_2018_percent_non_hispanic_asian_alone', 'd_2010_2018_percent_multi_family_units', 'd_2010_2018_percent_occupied_housing_units', 'd_2010_2018_median_gross_rent', 'd_2010_2018_median_home_value', 'd_2010_2018_percent_households_with_people_under_18', 'd_2010_2018_percent_of_households_in_same_house_year_ago', 'd_2010_2018_percent_bachelor_degree_or_higher', 'd_2010_2018_percent_car_commuters', 'd_2010_2018_percent_public_transport_commuters', 'd_2010_2018_percent_public_transport_trips_under_45_min', 'd_2010_2018_percent_car_trips_under_45_min', 'd_2010_2014_pop_density', 'd_2010_2014_resid_unit_density', 'd_2010_2014_per_capita_income', 'd_2010_2014_percent_non_hispanic_or_latino_white_alone', 'd_2010_2014_percent_non_hispanic_black_alone', 'd_2010_2014_percent_hispanic_any_race', 'd_2010_2014_percent_non_hispanic_asian_alone', 'd_2010_2014_percent_multi_family_units', 'd_2010_2014_percent_occupied_housing_units', 'd_2010_2014_median_gross_rent', 'd_2010_2014_median_home_value', 'd_2010_2014_percent_households_with_people_under_18', 'd_2010_2014_percent_of_households_in_same_house_year_ago', 'd_2010_2014_percent_bachelor_degree_or_higher', 'd_2010_2014_percent_car_commuters', 'd_2010_2014_percent_public_transport_commuters', 'd_2010_2014_percent_public_transport_trips_under_45_min', 'd_2010_2014_percent_car_trips_under_45_min', 'd_2014_2018_pop_density', 'd_2014_2018_resid_unit_density', 'd_2014_2018_per_capita_income', 'd_2014_2018_percent_non_hispanic_or_latino_white_alone', 'd_2014_2018_percent_non_hispanic_black_alone', 'd_2014_2018_percent_hispanic_any_race', 'd_2014_2018_percent_non_hispanic_asian_alone', 'd_2014_2018_percent_multi_family_units', 'd_2014_2018_percent_occupied_housing_units', 'd_2014_2018_median_gross_rent', 'd_2014_2018_median_home_value', 'd_2014_2018_percent_households_with_people_under_18', 'd_2014_2018_percent_of_households_in_same_house_year_ago', 'd_2014_2018_percent_bachelor_degree_or_higher', 'd_2014_2018_percent_car_commuters', 'd_2014_2018_percent_public_transport_commuters', 'd_2014_2018_percent_public_transport_trips_under_45_min', 'd_2014_2018_percent_car_trips_under_45_min', 'orig_pop_density', 'orig_percent_non_hispanic_or_latino_white_alone', 'orig_percent_non_hispanic_black_alone', 'orig_percent_hispanic_any_race', 'orig_percent_non_hispanic_asian_alone', 'orig_median_age', 'orig_per_capita_income', 'orig_resid_unit_density', 'orig_percent_multi_family_units', 'orig_percent_occupied_housing_units', 'orig_median_gross_rent', 'orig_median_home_value', 'orig_percent_households_with_people_under_18', 'orig_percent_of_households_in_same_house_year_ago', 'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters', 'orig_percent_public_transport_commuters', 'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
 
-DELTAS = [("2010", "2018"), ("2010", "2014"), ("2014", "2018")]
+DELTAS = [("2002", "2010"),("2010", "2018"), ("2010", "2014"), ("2014", "2018")]
 
 TRACT_DATA_YEARS = ["2010", "2014", "2018"]
 # LOT_DATA_YEARS = [str(year) for year in range(2010, 2020)]
@@ -225,7 +225,7 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
     
     # model_df.drop(columns=["Unnamed: 0.4", "Unnamed: 0.3","Unnamed: 0.2","Unnamed: 0.1"], inplace=True)
     # model_df.set_index("Unnamed: 0", inplace=True)
-    # model_df.index.rename("ITZ_GEOID", inplace=True)
+    model_df.index.rename("ITZ_GEOID", inplace=True)
     if verbose:
         print("Done!")
     # model_df.to_csv("itz-data.csv")
@@ -723,16 +723,20 @@ def _get_tract_lot_data(lot_df, tracts_to_lots) -> pd.DataFrame:
             residential_units_start = 0
             residential_units_end = 0
             for lot in lot_list:
-                prev = float(lot_df.at[lot, "max_resid_far"+str(start)])*float(lot_df.at[lot, "lot_area"])
-                # for year in range(int(start)+1, int(end)+1):
-                # for year in [2010, 2014, 2018]:
-                for year in [start, end]:
-                    curr = float(lot_df.at[lot, "max_resid_far"+str(year)])*float(lot_df.at[lot, "lot_area"])
-                    if prev != 0 and curr/prev > 1.1:
-                        upzoned += 1
-                        # years_since_upzoned.append(int(end)-int(year))
-                        break
-                    prev = curr
+                # prev = float(lot_df.at[lot, "max_resid_far"+str(start)])*float(lot_df.at[lot, "lot_area"])
+                # # for year in range(int(start)+1, int(end)+1):
+                # for year in [2002, 2010]:
+                # # for year in [start, end]:
+                #     curr = float(lot_df.at[lot, "max_resid_far"+str(year)])*float(lot_df.at[lot, "lot_area"])
+                #     if prev != 0 and curr/prev > 1.1:
+                #         upzoned += 1
+                #         # years_since_upzoned.append(int(end)-int(year))
+                #         break
+                #     prev = curr
+                capacity_start = float(lot_df.at[lot, "max_resid_far"+str(start)])*float(lot_df.at[lot, "lot_area"])
+                capacity_end = float(lot_df.at[lot, "max_resid_far"+str(end)])*float(lot_df.at[lot, "lot_area"])
+                if capacity_start != 0 and capacity_end/capacity_start > 1.1:
+                    upzoned += 1
                 try:
                     _ = int(lot_df.at[lot, "resid_units"+str(start)])
                     _ = int(lot_df.at[lot, "resid_units"+str(end)])
@@ -816,6 +820,9 @@ def _get_delta_data(tract_dfs, index) -> pd.DataFrame:
     date_to_index = {'2010':0, '2014':1, '2018':2}
 
     for delta in DELTAS:
+        print("Now working on: ", delta)
+        if delta[0] == "2002":
+            continue
         start_index = date_to_index[delta[0]]
         end_index = date_to_index[delta[1]]
         tract_delta["d_"+delta[0]+"_"+delta[1]+"_pop_density"] = tract_dfs[end_index]["pop_density"] - tract_dfs[start_index]["pop_density"]
