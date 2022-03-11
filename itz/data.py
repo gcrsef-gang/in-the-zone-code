@@ -76,9 +76,10 @@ DEPENDENT_VARS = ['d_2010_2018_resid_units',
        'd_2010_2018_percent_public_transport_trips_under_45_min',
        'd_2010_2018_percent_car_trips_under_45_min']
 
-INDEPENDENT_VARS = ['2010_2018_percent_upzoned', 'd_2010_2018_pop_density',
-        'd_2010_2018_resid_unit_density', 'd_2010_2018_percent_multi_family_units',
-        'orig_pop_density',
+INDEPENDENT_VARS = ['2002_2010_percent_upzoned', '2010_2018_percent_upzoned',
+       'd_2010_2018_pop_density',
+       'd_2010_2018_resid_unit_density', 'd_2010_2018_percent_multi_family_units',
+       'orig_pop_density',
        'orig_percent_non_hispanic_or_latino_white_alone',
        'orig_percent_non_hispanic_black_alone',
        'orig_percent_hispanic_any_race',
@@ -92,7 +93,7 @@ INDEPENDENT_VARS = ['2010_2018_percent_upzoned', 'd_2010_2018_pop_density',
        'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters',
        'orig_percent_public_transport_commuters',
        'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min']
-       
+
 # VAR_NAMES = ('2010_2014_percent_upzoned', '2010_2018_percent_upzoned', '2014_2018_percent_upzoned', 'd_2010_2014_resid_units', 'd_2010_2018_resid_units', 'd_2014_2018_resid_units', 'orig_percent_residential', 'orig_percent_mixed_development', 'orig_percent_subsidized_properties', 'd_2010_2018_pop_density', 'd_2010_2018_resid_unit_density', 'd_2010_2018_per_capita_income', 'd_2010_2018_percent_non_hispanic_or_latino_white_alone', 'd_2010_2018_percent_non_hispanic_black_alone', 'd_2010_2018_percent_hispanic_any_race', 'd_2010_2018_percent_non_hispanic_asian_alone', 'd_2010_2018_percent_multi_family_units', 'd_2010_2018_percent_occupied_housing_units', 'd_2010_2018_median_gross_rent', 'd_2010_2018_median_home_value', 'd_2010_2018_percent_households_with_people_under_18', 'd_2010_2018_percent_of_households_in_same_house_year_ago', 'd_2010_2018_percent_bachelor_degree_or_higher', 'd_2010_2018_percent_car_commuters', 'd_2010_2018_percent_public_transport_commuters', 'd_2010_2018_percent_public_transport_trips_under_45_min', 'd_2010_2018_percent_car_trips_under_45_min', 'd_2010_2014_pop_density', 'd_2010_2014_resid_unit_density', 'd_2010_2014_per_capita_income', 'd_2010_2014_percent_non_hispanic_or_latino_white_alone', 'd_2010_2014_percent_non_hispanic_black_alone', 'd_2010_2014_percent_hispanic_any_race', 'd_2010_2014_percent_non_hispanic_asian_alone', 'd_2010_2014_percent_multi_family_units', 'd_2010_2014_percent_occupied_housing_units', 'd_2010_2014_median_gross_rent', 'd_2010_2014_median_home_value', 'd_2010_2014_percent_households_with_people_under_18', 'd_2010_2014_percent_of_households_in_same_house_year_ago', 'd_2010_2014_percent_bachelor_degree_or_higher', 'd_2010_2014_percent_car_commuters', 'd_2010_2014_percent_public_transport_commuters', 'd_2010_2014_percent_public_transport_trips_under_45_min', 'd_2010_2014_percent_car_trips_under_45_min', 'd_2014_2018_pop_density', 'd_2014_2018_resid_unit_density', 'd_2014_2018_per_capita_income', 'd_2014_2018_percent_non_hispanic_or_latino_white_alone', 'd_2014_2018_percent_non_hispanic_black_alone', 'd_2014_2018_percent_hispanic_any_race', 'd_2014_2018_percent_non_hispanic_asian_alone', 'd_2014_2018_percent_multi_family_units', 'd_2014_2018_percent_occupied_housing_units', 'd_2014_2018_median_gross_rent', 'd_2014_2018_median_home_value', 'd_2014_2018_percent_households_with_people_under_18', 'd_2014_2018_percent_of_households_in_same_house_year_ago', 'd_2014_2018_percent_bachelor_degree_or_higher', 'd_2014_2018_percent_car_commuters', 'd_2014_2018_percent_public_transport_commuters', 'd_2014_2018_percent_public_transport_trips_under_45_min', 'd_2014_2018_percent_car_trips_under_45_min', 'orig_pop_density', 'orig_percent_non_hispanic_or_latino_white_alone', 'orig_percent_non_hispanic_black_alone', 'orig_percent_hispanic_any_race', 'orig_percent_non_hispanic_asian_alone', 'orig_median_age', 'orig_per_capita_income', 'orig_resid_unit_density', 'orig_percent_multi_family_units', 'orig_percent_occupied_housing_units', 'orig_median_gross_rent', 'orig_median_home_value', 'orig_percent_households_with_people_under_18', 'orig_percent_of_households_in_same_house_year_ago', 'orig_percent_bachelor_degree_or_higher', 'orig_percent_car_commuters', 'orig_percent_public_transport_commuters', 'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min')
 
 DELTAS = [("2002", "2010"),("2010", "2018"), ("2010", "2014"), ("2014", "2018")]

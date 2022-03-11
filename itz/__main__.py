@@ -78,8 +78,12 @@ def _fit(model_string: str, model_path: str, data_path: str, verbose):
     """Fits a model to the data and prints evaluation metrics.
     """
     model_name = itz.model.ModelName.__dict__[model_string]
+    if verbose:
+        print("Loading data... ", end="")
     data = pd.read_csv(data_path)
-    model = itz.fit(itz.get_description(model_name), data, verbose)
+    if verbose:
+        print("done!")
+    model = itz.fit(*itz.get_description(model_name, data, verbose), data, verbose)
     np.savetxt(model_path, model.calc_sigma()[0], delimiter=",")
     print(itz.evaluate(model))
 
@@ -254,5 +258,5 @@ if __name__ == "__main__":
     vis_parser.set_defaults(func=_visualize)
 
     args = parser.parse_args()
-    print(args)
+    # print(args)
     args.func(**{key: val for key, val in vars(args).items() if key != "func"})
