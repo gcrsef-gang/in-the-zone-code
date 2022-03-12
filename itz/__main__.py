@@ -21,14 +21,15 @@ Parameters:
 - data_path: path to dataset CSV.
 - img_path: path to output image file.
 
-fit <model> <model_path> <data_path>
-------------------------------------
+fit <model> <model_path> <data_path> [--cov_mat_path COV_MAT_PATH]
+------------------------------------------------------------------
 Fit an SEM model and print results.
 
 Parameters:
 - model: name of the model to fit.
-- model_path: path to file to store model estimated covariance matrix.
+- model_path: path to file to store mode.
 - data_path: path to CSV with data for model.
+- cov_mat_path (optional): path to file to store covariance matrix (CSV).
 
 regress <x> <y> <data_path> [--regression_plot_path PATH1] [--residual_plot_path PATH2] [--histogram_path PATH3] [--log_x] [--log_y]
 ------------------------------------------------------------------------------------------------------------------------------------
@@ -67,18 +68,16 @@ Parameters:
 Use -v for verbosity.
 """
 
-# TODO:
-# - test regression and histogram
-
 
 from typing import Dict, List
 import argparse
+import json
 import math
 import os
+import pickle
 
 import numpy as np
 import pandas as pd
-import json
 
 import itz
 
@@ -98,7 +97,7 @@ def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: boo
     itz.make_sem_diagram(model_name, data, img_path, verbose)
 
 
-def _fit(model_string: str, model_path: str, data_path: str, verbose: bool):
+def _fit(model_string: str, model_path: str, data_path: str, cov_mat_path: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
     model_name = itz.model.ModelName.__dict__[model_string]
@@ -108,7 +107,8 @@ def _fit(model_string: str, model_path: str, data_path: str, verbose: bool):
     if verbose:
         print("done!")
     model = itz.fit(*itz.get_description(model_name, data, verbose), data, verbose)
-    np.savetxt(model_path, model.calc_sigma()[0], delimiter=",")
+    # TODO: figure out how to save/load a model
+    np.savetxt(cov_mat_path, model.calc_sigma()[0], delimiter=",")
     print(itz.evaluate(model))
 
 
@@ -271,6 +271,7 @@ if __name__ == "__main__":
     fit_parser.add_argument("model_string", choices=itz.model.MODEL_NAMES)
     fit_parser.add_argument("model_path")
     fit_parser.add_argument("data_path")
+    fit_parser.add_argument("--cov_mat_path", required=False)
     fit_parser.set_defaults(func=_fit)
 
     histogram_parser = subparsers.add_parser("distribute")
