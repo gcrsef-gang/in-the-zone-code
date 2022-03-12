@@ -40,8 +40,10 @@ LOG_TRANSFORM_VARS = {
 
 
 def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> semopy.Model:
-    """Fits an SEM to a dataset.
+    """Fits an SEM to a dataset. 
     """
+    # Transform data
+
     log_transform_vars = set()
 
     model_data = pd.DataFrame()
@@ -60,6 +62,8 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
     if verbose:
         print("done!")
 
+    # Create and fit model
+
     model = semopy.Model(desc)
     if verbose:
         print("Fitting SEM to data... ", end="")
@@ -72,6 +76,8 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
 def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
                         ) -> Tuple[str, Set[str]]:
     """Creates a semopy model description for one of three possible SEMs.
+
+    Returns the description as a string as well as a set of all variable names.
     """
     start_yr, mid_yr, end_yr = MODEL_YEARS[model_name]
     control_vars = {var for var in INDEPENDENT_VARS if var != "2002_2010_percent_upzoned"}

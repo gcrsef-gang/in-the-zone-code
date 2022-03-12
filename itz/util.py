@@ -36,7 +36,7 @@ def get_data_linreg(x: str, y: str, data: pd.DataFrame, log_x: bool, log_y: bool
     return X, Y
 
 
-def regress(x: str, y: str, data: pd.DataFrame, log_x: bool, log_y: bool) -> Tuple:
+def regress(x: str, y: str, data: pd.DataFrame, log_x: bool=False, log_y: bool=False) -> Tuple:
     """Returns the slope, intercept, correlation coefficient, two-tailed p-value, coefficient of
     determination, and the resulting regression function.
 

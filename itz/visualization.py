@@ -11,14 +11,15 @@ import seaborn as sn
 import scipy
 from typing import List, Tuple
 
-from .model import ModelName
+from .model import ModelName, get_description
 from .util import get_data_linreg, regress
 
 
-def make_sem_diagram(model_name: ModelName, path: str):
+def make_sem_diagram(model_name: ModelName, data: pd.DataFrame, path: str, verbose: bool=False):
     """Saves a diagram of an SEM to a PNG image.
     """
-    # semplot()
+    desc, _ = get_description(model_name, data, verbose)
+    _ = semopy.semplot(semopy.Model(desc), filename=path)
 
 
 def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: bool, log_y: bool):

@@ -12,13 +12,14 @@ Model options:
 
 Variable names specified in itz.data.VAR_NAMES
 
-diagram <model> <path>
-----------------------
+diagram <model> <data_path> <img_path>
+--------------------------------------
 Save a diagram of the SEM as a PNG image.
 
 Parameters:
 - model: name of SEM model to create diagram of.
-- path: path to output image file.
+- data_path: path to dataset CSV.
+- img_path: path to output image file.
 
 fit <model> <model_path> <data_path>
 ------------------------------------
@@ -89,11 +90,12 @@ def _print_stats(dict_: Dict[str, float]):
         print(f"{key}: {round(val, 3)}")
 
 
-def _make_diagram(model_string: str, img_path: str, verbose: bool):
+def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: bool):
     """Makes an SEM diagram.
     """
-    model = itz.model.ModelName.__dict__[model_string]
-    itz.make_sem_diagram(model, img_path)
+    model_name = itz.model.ModelName.__dict__[model_string]
+    data = pd.read_csv(data_path)
+    itz.make_sem_diagram(model_name, data, img_path, verbose)
 
 
 def _fit(model_string: str, model_path: str, data_path: str, verbose: bool):
@@ -261,6 +263,7 @@ if __name__ == "__main__":
     
     diagram_parser = subparsers.add_parser("diagram")
     diagram_parser.add_argument("model_string")
+    diagram_parser.add_argument("data_path")
     diagram_parser.add_argument("img_path")
     diagram_parser.set_defaults(func=_make_diagram)
 
