@@ -29,20 +29,30 @@ Parameters:
 - model_path: path to file to store model estimated covariance matrix.
 - data_path: path to CSV with data for model.
 
-graph <x> <img_path1> <data_path> [--y Y_VAR_NAME] [--img_path2 IMG_PATH2]
---------------------------------------------------------------------------
-Create a visualization of one or two variables from our dataset. Descriptive
-statistics will be printed to the console.
+regress <x> <y> <data_path> [--regression_plot_path PATH1] [--residual_plot_path PATH2] [--histogram_path PATH3] [--log_x] [--log_y]
+------------------------------------------------------------------------------------------------------------------------------------
+Create visualizations for a regression between two variables. Descriptive statistics will be
+printed to the console.
 
 Parameters:
-- x: name of explanatory variable to graph
-- img_path1: path to first output image file
+- x: name of explanatory variable (can also be all_vars)
+- y: name of response variable (can also be all_vars)
 - data_path: path to dataset CSV.
-- y (optional): name of response variable to graph
-- path2 (optional): path to second output image file
+- regression_plot_path (optional): path to regression plot
+- residual_plot_path (optional): path to residual plot
+- histogram_path (optional): path to histogram of residuals
+- log_x: log-transforms x
+- log_y: log-transforms y
 
-If y is specified, a scatterplot with an LSRL and/or a residual plot will be produced.
-If y is not specified, a histogram of will be produced.
+distribute <x> <data_path> [--img_path IMG_PATH] [--log]
+--------------------------------------------------------
+Create a histogram of a variable.
+
+Parameters:
+- x: name of variable to graph (can also be all_vars)
+- data_path: path to dataset CSV.
+- img_path: path to histogram
+- log: log-transforms x
 
 parse [--lot_data_path LOT_DATA_PATH] [--tract_data_paths TRACT_DATA_PATHS] output_path
 ---------------------------------------------------------------------------------------
@@ -56,8 +66,13 @@ Parameters:
 Use -v for verbosity.
 """
 
+# TODO:
+# - test regression and histogram
+
+
 from typing import Dict, List
 import argparse
+import math
 import os
 
 import numpy as np
@@ -67,14 +82,21 @@ import json
 import itz
 
 
-def _make_diagram(model_string: str, img_path: str, verbose):
+def _print_stats(dict_: Dict[str, float]):
+    """Prints a dictionary of statistics.
+    """
+    for key, val in dict_.items():
+        print(f"{key}: {round(val, 3)}")
+
+
+def _make_diagram(model_string: str, img_path: str, verbose: bool):
     """Makes an SEM diagram.
     """
     model = itz.model.ModelName.__dict__[model_string]
     itz.make_sem_diagram(model, img_path)
 
 
-def _fit(model_string: str, model_path: str, data_path: str, verbose):
+def _fit(model_string: str, model_path: str, data_path: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
     model_name = itz.model.ModelName.__dict__[model_string]
@@ -88,33 +110,42 @@ def _fit(model_string: str, model_path: str, data_path: str, verbose):
     print(itz.evaluate(model))
 
 
-def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log_y=False) -> Dict[str, float]:
-    """Create a visualization of one or two variables from our dataset.
-    
-    Prints descriptive statistics.
+def _make_histogram(x: str, data_path: str, img_path: str, log: bool, verbose: bool):
+    """Visualize the distribution of a variable.
     """
     data = pd.read_csv(data_path)
     data.set_index("ITZ_GEOID", inplace=True)
-    if y is None:
-        if x == 'all_vars':
-            try:
-                os.mkdir("histogram-data/")
-            except FileExistsError:
-                pass
-            for column in data.columns:
-                if column.startswith("Unnamed") or column in ["all_vars"]:
-                    continue
+
+    if x == 'all_vars':
+        try:
+            os.mkdir("histogram-data/")
+        except FileExistsError:
+            pass
+        for column in data.columns:
+            if column.startswith("Unnamed") or column == "all_vars":
+                continue
+            if verbose:
                 print("working on:", column)
-                itz.make_histogram(column, data, "histogram-data/"+column+".png")
+            itz.make_histogram(column, data, "histogram-data/" + column + ".png")
+            if verbose:
                 print("Histogram created:", column)
-            return
-        else:
-            if img_path1:
-                return itz.make_histogram(x, data, img_path1)
-            else:
-                return itz.make_histogram(x, data, x+".png")
-    if img_path1:
-        regression_stats = itz.make_regression_plot(x, y, data, img_path1, log_x, log_y)
+        return
+    else:
+        histogram_path = img_path if img_path else x + ".png"
+        transformation = ((lambda x_: math.log(x_ + itz.util.LOG_TRANSFORM_SHIFT)) if log
+                          else (lambda x_: x_))
+        _print_stats(itz.make_histogram(x, data, histogram_path, transformation))
+
+
+def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, histogram_path,
+        log_x, log_y, verbose):
+    """Create a regression visualization.
+    """
+    data = pd.read_csv(data_path)
+    data.set_index("ITZ_GEOID", inplace=True)
+
+    if regression_plot_path:
+        regression_stats = itz.make_regression_plot(x, y, data, regression_plot_path, log_x, log_y)
     else:
         try:
             os.mkdir("regression-plots")
@@ -124,7 +155,8 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
             # for x_column in itz.data.CONTROL_VARS.extend(["2011_2019_percent_upzoned","2016_2019_percent_upzoned","2011_2016_percent_upzoned"]):
             for x_column in itz.data.INDEPENDENT_VARS:
                 for y_column in itz.data.DEPENDENT_VARS:
-                    print("\nworking on:", x_column, y_column)
+                    if verbose:
+                        print("\nworking on:", x_column, y_column)
                     try:
                         os.mkdir("regression-plots/"+y_column+"/")
                     except FileExistsError:
@@ -163,20 +195,27 @@ def _make_graph(x, data_path, img_path1, y, img_path2, verbose, log_x=False, log
                 regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+x+"_"+"log_"+y+".png", log_x, log_y)
             else:
                 regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+x+"_"+y+".png", log_x, log_y)
-    if img_path2:
-        residual_stats = itz.make_residual_plot(x, y, data, img_path2, log_x, log_y)
-        stats = {**regression_stats, **residual_stats}
-        for key, val in stats.items():
-                print(f"{key}: {val}")
-        return stats
-    else:
-        # pass
-        # **regression_stats is not a thing???
-        # print(regression_stats)
-        return {"sum of squared_residuals":regression_stats[0]}
+    
+    if residual_plot_path:
+        resid_plot_stats = itz.make_residual_plot(x, y, data, residual_plot_path, log_x, log_y)
+        regression_stats = {**regression_stats, **resid_plot_stats}
+    
+    if histogram_path:
+        func = itz.util.regress(x, y, data, log_x, log_y)[-1]
+        residual_df = pd.DataFrame()
+        residual_df["resids"] = data[x].transform(func) - data[y]
+        resid_hist_stats = itz.make_histogram("resids", residual_df, histogram_path)
+        original_keys = list(resid_hist_stats.keys())
+        for key in original_keys:
+            resid_hist_stats["resid " + key] = resid_hist_stats[key]
+            del resid_hist_stats[key]
+        regression_stats = {**regression_stats, **resid_hist_stats}
+    
+    if verbose:
+        _print_stats(regression_stats)
 
 
-def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], verbose):
+def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], verbose: bool):
     """Parse the raw ACS and PLUTO data into a directory of CSV files.
     """
     tract_data = (
@@ -195,11 +234,14 @@ def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], ve
     model_data.to_csv(os.path.join(output_path, "itz-data.csv"))
     lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
 
-def _correlate(data_path: str, output_path: str, img_path: str, verbose):
+
+def _correlate(data_path: str, output_path: str, img_path: str, verbose: bool):
     data = pd.read_csv(data_path)
     itz.make_correlation_matrix(data, output_path, img_path)
 
-def _visualize(geodata_path: str, data_path: str, output_path: str, columns: List[str], lots: bool, verbose):
+
+def _visualize(geodata_path: str, data_path: str, output_path: str, columns: List[str], lots: bool,
+        verbose: bool):
     with open(geodata_path, "r") as f:
         geodata = json.load(f)
     with open(data_path, "r") as f:
@@ -209,6 +251,7 @@ def _visualize(geodata_path: str, data_path: str, output_path: str, columns: Lis
         itz.make_map_vis(geodata, data, output_path, columns, int(lots)+1)
     else:
         itz.make_map_vis(geodata, data, "vis.html", columns, int(lots)+1)
+
 
 if __name__ == "__main__":
 
@@ -227,15 +270,23 @@ if __name__ == "__main__":
     fit_parser.add_argument("data_path")
     fit_parser.set_defaults(func=_fit)
 
-    graph_parser = subparsers.add_parser("graph")
-    graph_parser.add_argument("x", choices=itz.data.VAR_NAMES)
-    graph_parser.add_argument("data_path")
-    graph_parser.add_argument("--img_path1", required=False)
-    graph_parser.add_argument("--y", choices=itz.data.VAR_NAMES, required=False)
-    graph_parser.add_argument("--img_path2", required=False)
-    graph_parser.add_argument("--log_x", required=False, action="store_true")
-    graph_parser.add_argument("--log_y", required=False, action="store_true")
-    graph_parser.set_defaults(func=_make_graph)
+    histogram_parser = subparsers.add_parser("distribute")
+    histogram_parser.add_argument("x", choices=itz.data.VAR_NAMES + ("all_vars",))
+    histogram_parser.add_argument("data_path")
+    histogram_parser.add_argument("--img_path", required=False)
+    histogram_parser.add_argument("--log", required=False, action="store_true")
+    histogram_parser.set_defaults(func=_make_histogram)
+
+    regress_parser = subparsers.add_parser("regress")
+    regress_parser.add_argument("x", choices=itz.data.VAR_NAMES + ("all_vars",))
+    regress_parser.add_argument("y", choices=itz.data.VAR_NAMES + ("all_vars",))
+    regress_parser.add_argument("data_path")
+    regress_parser.add_argument("--regression_plot_path", required=False)
+    regress_parser.add_argument("--residual_plot_path", required=False)
+    regress_parser.add_argument("--histogram_path", required=False)
+    regress_parser.add_argument("--log_x", required=False, action="store_true")
+    regress_parser.add_argument("--log_y", required=False, action="store_true")
+    regress_parser.set_defaults(func=_make_regression)
 
     parse_parser = subparsers.add_parser("parse")
     parse_parser.add_argument("output_path")
@@ -258,5 +309,4 @@ if __name__ == "__main__":
     vis_parser.set_defaults(func=_visualize)
 
     args = parser.parse_args()
-    # print(args)
     args.func(**{key: val for key, val in vars(args).items() if key != "func"})

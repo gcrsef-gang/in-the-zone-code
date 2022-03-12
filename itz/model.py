@@ -38,14 +38,9 @@ LOG_TRANSFORM_VARS = {
     ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
 }
 
-# Value for shifting variables before log transformations. 
-LOG_TRANSFORM_SHIFT = 0.1
-
 
 def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> semopy.Model:
     """Fits an SEM to a dataset.
-
-    NOTE: Assumes all log-transformed variables are always >= 0
     """
     log_transform_vars = set()
 
@@ -54,14 +49,14 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
         if var in data.columns:
             model_data[var] = data[var]
         elif var[:4] == "log_":
-            model_data[var[4:]] = data[var[4:]] + LOG_TRANSFORM_SHIFT
+            model_data[var[4:]] = data[var[4:]]
             log_transform_vars.add(var[4:])
     model_data = model_data.dropna()
 
     if verbose:
         print("Log transforming: " + ", ".join(log_transform_vars), end="" + "... ")
     for var in log_transform_vars:
-        model_data["log_" + var] = log_transform(var, model_data)
+        model_data["log_" + var] = log_transform(model_data[var])
     if verbose:
         print("done!")
 
