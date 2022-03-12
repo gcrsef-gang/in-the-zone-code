@@ -9,7 +9,7 @@
     * [x] Write SEM visualization
 * [x] Remove data from code repo
 * [ ] Move files in root directory to respective folders
-* [ ] Update README with main script usage examples
+* [x] Update README with main script usage examples
 * [ ] Figure out percent upzoned transformation
 * [ ] Finish SEM model
 * [ ] Create demo
