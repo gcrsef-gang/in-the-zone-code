@@ -75,6 +75,7 @@ import json
 import math
 import os
 import pickle
+import sys
 
 import numpy as np
 import pandas as pd
@@ -103,13 +104,22 @@ def _fit(model_string: str, model_path: str, data_path: str, cov_mat_path: str, 
     model_name = itz.model.ModelName.__dict__[model_string]
     if verbose:
         print("Loading data... ", end="")
+        sys.stdout.flush()
     data = pd.read_csv(data_path)
     if verbose:
         print("done!")
     model = itz.fit(*itz.get_description(model_name, data, verbose), data, verbose)
     # TODO: figure out how to save/load a model
-    np.savetxt(cov_mat_path, model.calc_sigma()[0], delimiter=",")
-    print(itz.evaluate(model))
+    if cov_mat_path is not None:
+        np.savetxt(cov_mat_path, model.calc_sigma()[0], delimiter=",")
+    if verbose:
+        print("Evaluating model...", end="")
+        sys.stdout.flush()
+    stats, params = itz.evaluate(model)
+    if verbose:
+        print("done!")
+    _print_stats(stats)
+    print(params)
 
 
 def _make_histogram(x: str, data_path: str, img_path: str, log: bool, verbose: bool):

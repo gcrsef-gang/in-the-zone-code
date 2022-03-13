@@ -10,6 +10,10 @@
 * [x] Remove data from code repo
 * [ ] Move files in root directory to respective folders
 * [x] Update README with main script usage examples
-* [ ] Figure out percent upzoned transformation
 * [ ] Finish SEM model
+    * [ ] Add grouping by manhattan/non-manhattan
+    * [ ] Add functionality for multiple transformations
+    * [ ] Go through all regressions and transform for equal variance assumption and normality of residuals
+    * [ ] Make dependent variables covariate (using threshold)
+    * [ ] Try different semopy model types
 * [ ] Create demo

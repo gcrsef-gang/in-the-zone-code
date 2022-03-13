@@ -2,8 +2,9 @@
 """
 
 from enum import Enum
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 import itertools
+import sys
 
 import pandas as pd
 import semopy
@@ -12,11 +13,9 @@ from .data import INDEPENDENT_VARS, DEPENDENT_VARS
 from .util import log_transform, regress
 
 
-COVARIANCE_CORRELATION_THRESHOLD = 0.5
-# This should be a correlation calculated independent of the SEM, because the correlation computed
-# by the SEM is unreliable because the only reason we are using the threshold is because we believe
-# it is decreasing the SEM's performance.
-REGRESSION_CORRELATION_THRESHOLD = 0.5
+DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.005
+CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.01
+REGRESSION_SIGNIFICANCE_THRESHOLD = 0.01
 
 
 class ModelName(Enum):
@@ -57,6 +56,7 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
 
     if verbose:
         print("Log transforming: " + ", ".join(log_transform_vars), end="" + "... ")
+        sys.stdout.flush()
     for var in log_transform_vars:
         model_data["log_" + var] = log_transform(model_data[var])
     if verbose:
@@ -64,9 +64,16 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
 
     # Create and fit model
 
+    if verbose:
+        print("Constructing SEM model... ", end="")
+        sys.stdout.flush()
     model = semopy.Model(desc)
     if verbose:
+        print("done!")
+
+    if verbose:
         print("Fitting SEM to data... ", end="")
+        sys.stdout.flush()
     model.fit(model_data)
     if verbose:
         print("done!")
@@ -120,7 +127,7 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
         num_examined_regressions += 1
         # Controls for densification
         for control in control_vars:
-            if abs(regress(dep_var, control, data)[2]) > REGRESSION_CORRELATION_THRESHOLD:
+            if abs(regress(dep_var, control, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
                 _add_relation([dep_var, control], ["~"])
                 num_control_regressions += 1
 
@@ -131,23 +138,35 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     early_upzoning = f"{start_yr}_{mid_yr}_percent_upzoned"
     _add_relation(["densification", early_upzoning], ["~"])
     _add_relation([f"d_{mid_yr}_{end_yr}_median_home_value", early_upzoning], ["~"])
+    for dep_var in DEPENDENT_VARS:
+        if abs(regress(early_upzoning, dep_var, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([early_upzoning, dep_var], ["~"])
+            num_examined_regressions += 1
 
     num_control_regressions += 3
     
     # Covariances
+
+    # Controls
 
     # Remove controls not involved in regressions.
     control_vars = variables.intersection(control_vars)
 
     num_covariances = 0
     for var_1, var_2, in itertools.combinations(control_vars, 2):
-        if abs(regress(var_1, var_2, data)[2]) > COVARIANCE_CORRELATION_THRESHOLD:
+        if abs(regress(var_1, var_2, data)[3]) < CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
+
+    # Densification indicators
 
     for var_1, var_2 in itertools.combinations(densification_indicators, 2):
         _add_relation([var_1, var_2], ["~~"])
         num_covariances += 1
+
+    # Dependent variables
+
+    # for var_1, var_2 in itertools.combinations()
 
     model_description = "\n".join(relations)
 
@@ -161,7 +180,8 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     return model_description, variables
 
 
-def evaluate(model: semopy.Model) -> pd.DataFrame:
+def evaluate(model: semopy.Model) -> Tuple[Dict[str, float], pd.DataFrame]:
     """Returns evaluations of how well an SEM fits a dataset.
     """
-    return model.inspect()
+    stats = semopy.calc_stats(model)
+    return {col: stats[col][0] for col in stats.columns}, model.inspect()
