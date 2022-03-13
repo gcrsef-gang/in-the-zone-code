@@ -8,7 +8,7 @@
     * [x] Add histograms to command line script
     * [x] Write SEM visualization
 * [x] Remove data from code repo
-* [ ] Move files in root directory to respective folders
+* [x] Move files in root directory to respective folders
 * [x] Update README with main script usage examples
 * [ ] Finish SEM model
     * [ ] Add grouping by manhattan/non-manhattan
