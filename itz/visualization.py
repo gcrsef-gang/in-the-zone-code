@@ -83,10 +83,18 @@ def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: boo
     """
     X, Y = get_data_linreg(x, y, data, log_x, log_y)
     slope, intercept, _, _, _, _ = regress(x, y, data, log_x, log_y)
-    resids = Y - (slope * X + intercept)
+    resids = (Y - (slope * X + intercept)).to_numpy()
 
-    plt.plot(X, np.zeros(len(X)), '-r')
-    plt.scatter(X, resids)
+    digitized = np.digitize(X, bins=np.linspace(min(X), max(X), num=100))
+    bin_size = (max(X) - min(X)) / 100
+    bins = [[] for _ in range(100)]
+    for i, bin_ in enumerate(digitized):
+        bins[bin_ - 1].append(resids[i])
+    variances = [np.var(np.array(bin_)) for bin_ in bins]
+
+    # plt.plot(X, np.zeros(len(X)), '-r')
+    plt.title("Variance of residuals")
+    plt.scatter(np.arange(len(bins)) * bin_size - min(X), variances)
     plt.savefig(path)
     plt.clf()
 
