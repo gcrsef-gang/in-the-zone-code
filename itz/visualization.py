@@ -9,6 +9,7 @@ import math
 import semopy
 import seaborn as sn
 import scipy
+from enum import Enum
 from typing import List, Tuple
 
 from .model import ModelName, get_description
@@ -22,21 +23,23 @@ def make_sem_diagram(model_name: ModelName, data: pd.DataFrame, path: str, verbo
     _ = semopy.semplot(semopy.Model(desc), filename=path)
 
 
-def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: bool, log_y: bool):
+def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, transformation_x=lambda x:x, transformation_y=lambda x:x):
     """Creates a scatterplot with LSRL and returns descriptive statistics as a dictionary.
     """
-    X, Y = get_data_linreg(x, y, data, log_x, log_y)
+    X, Y = get_data_linreg(x, y, data, transformation_x, transformation_y)
 
-    slope, intercept, r, two_tailed_p, r_squared, _ = regress(x, y, data, log_x, log_y)
+    slope, intercept, r, two_tailed_p, r_squared, _ = regress(x, y, data, transformation_x, transformation_y)
 
     plt.plot(X, (slope * np.asarray(X) + intercept), '-r')
 
-    if log_x:
-        plt.xlabel("log_" + x)
+    if transformation_x:
+        # plt.xlabel("log_" + x)
+        plt.xlabel("transformed_" + x)
     else:
         plt.xlabel(x)
-    if log_y:
-        plt.ylabel("log_" + y)
+    if transformation_y:
+        # plt.ylabel("log_" + y)
+        plt.ylabel("transformed_" + y)
     else:
         plt.ylabel(y)
 
@@ -52,15 +55,17 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: b
         "r": r,
         "p": two_tailed_p,
         "R^2": r_squared,
-        "log(X) mean" if log_x else "X mean": X.mean(),
-        "log(Y) mean" if log_y else "Y mean": Y.mean(),
+        "Transformed mean" if transformation_x else "X mean": X.mean(),
+        "Transformed mean" if transformation_y else "Y mean": Y.mean(),
+        # "log(X) mean" if transformation_X else "X mean": X.mean(),
+        # "log(Y) mean" if transformation_y else "Y mean": Y.mean(),
         "n": len(X)
     }
 
 
 def make_correlation_matrix(data: pd.DataFrame, output_path: str, path: str):
     # x = "2010_2018_percent_upzoned"
-    # logged = data[x][data[x].notnull()][data[x] > 0].apply(math.log)
+    # logged = data[x][data[x].notnull()][data[x] > 0].transform(math.log)
     # data[x] = logged
     x = data.corr()
     print(len(data.columns))
@@ -77,12 +82,12 @@ def make_correlation_matrix(data: pd.DataFrame, output_path: str, path: str):
     return x
 
 
-def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: bool, log_y: bool):
+def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str, transformation_x=lambda x:x, transformation_y=lambda x:x):
     """Creates a residual plot for a least-squares linear regression and returns descriptive
     statistics as a dictionary.
     """
-    X, Y = get_data_linreg(x, y, data, log_x, log_y)
-    slope, intercept, _, _, _, _ = regress(x, y, data, log_x, log_y)
+    X, Y = get_data_linreg(x, y, data, transformation_x, transformation_y)
+    slope, intercept, _, _, _, _ = regress(x, y, data, transformation_x, transformation_y)
     resids = (Y - (slope * X + intercept)).to_numpy()
 
     digitized = np.digitize(X, bins=np.linspace(min(X), max(X), num=100))
@@ -107,7 +112,7 @@ def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str, log_x: boo
 def make_histogram(x: str, data: pd.DataFrame, path: str, transformation=lambda x: x):
     """"Creates a histogram and returns descriptive statistics as a dictionary.
     """
-    X = (data[x][data[x].notnull()]).apply(transformation)
+    X = (data[x][data[x].notnull()]).transform(transformation)
     mean, stdev = X.mean(), X.std()
     plt.hist(X)
     plt.title(f"{x}  Mean: {round(mean, 3)}  Stdev: {round(stdev, 3)}")

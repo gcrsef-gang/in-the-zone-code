@@ -31,7 +31,7 @@ Parameters:
 - data_path: path to CSV with data for model.
 - cov_mat_path (optional): path to file to store covariance matrix (CSV).
 
-regress <x> <y> <data_path> [--regression_plot_path PATH1] [--residual_plot_path PATH2] [--histogram_path PATH3] [--log_x] [--log_y]
+regress <x> <y> <data_path> [--regression_plot_path PATH1] [--residual_plot_path PATH2] [--histogram_path PATH3] [--transform_x] [--transform_y]
 ------------------------------------------------------------------------------------------------------------------------------------
 Create visualizations for a regression between two variables. Descriptive statistics will be
 printed to the console.
@@ -43,10 +43,10 @@ Parameters:
 - regression_plot_path (optional): path to regression plot
 - residual_plot_path (optional): path to residual plot
 - histogram_path (optional): path to histogram of residuals
-- log_x: log-transforms x
-- log_y: log-transforms y
+- transform_x: applies a transformation to x
+- transform_y: applies a transformation to y
 
-distribute <x> <data_path> [--img_path IMG_PATH] [--log]
+distribute <x> <data_path> [--img_path IMG_PATH] [--transform]
 --------------------------------------------------------
 Create a histogram of a variable.
 
@@ -54,7 +54,7 @@ Parameters:
 - x: name of variable to graph (can also be all_vars)
 - data_path: path to dataset CSV.
 - img_path: path to histogram
-- log: log-transforms x
+- transform: log-transforms x
 
 parse [--lot_data_path LOT_DATA_PATH] [--tract_data_paths TRACT_DATA_PATHS] output_path
 ---------------------------------------------------------------------------------------
@@ -76,12 +76,34 @@ import math
 import os
 import pickle
 import sys
+from enum import Enum
 
 import numpy as np
 import pandas as pd
 
 import itz
 
+class Transformations(Enum):
+    logx = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
+    logy = lambda y: math.e ** y - itz.util.LOG_TRANSFORM_SHIFT
+    # duplicates for convenient use
+    lnx = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
+    lny = lambda y: math.e ** y - itz.util.LOG_TRANSFORM_SHIFT
+    log10x = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 10))
+    log10y = lambda y: 10 ** y - itz.util.LOG_TRANSFORM_SHIFT
+    log2x = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 2))
+    log2y = lambda y: 2 ** y - itz.util.LOG_TRANSFORM_SHIFT
+
+TRANSFORMATION_NAMES = (
+    'logx',
+    'logy',
+    'lnx',
+    'lny',
+    'log10x',
+    'log10y',
+    'log2x',
+    'log2y',
+)
 
 def _print_stats(dict_: Dict[str, float]):
     """Prints a dictionary of statistics.
@@ -122,7 +144,7 @@ def _fit(model_string: str, model_path: str, data_path: str, cov_mat_path: str, 
     print(params)
 
 
-def _make_histogram(x: str, data_path: str, img_path: str, log: bool, verbose: bool):
+def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
     """Visualize the distribution of a variable.
     """
     data = pd.read_csv(data_path)
@@ -144,20 +166,30 @@ def _make_histogram(x: str, data_path: str, img_path: str, log: bool, verbose: b
         return
     else:
         histogram_path = img_path if img_path else x + ".png"
-        transformation = ((lambda x_: math.log(x_ + itz.util.LOG_TRANSFORM_SHIFT)) if log
-                          else (lambda x_: x_))
+        if transform:
+            transformation = Transformations.__dict__[transform]
+        else:
+            transformation = lambda x: x
         _print_stats(itz.make_histogram(x, data, histogram_path, transformation))
 
 
 def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, histogram_path,
-        log_x, log_y, verbose):
+        transform_x, transform_y, verbose):
     """Create a regression visualization.
     """
     data = pd.read_csv(data_path)
     data.set_index("ITZ_GEOID", inplace=True)
 
     if regression_plot_path:
-        regression_stats = itz.make_regression_plot(x, y, data, regression_plot_path, log_x, log_y)
+        if transform_x:
+            transformation_x = Transformations.__dict__[transform_x]
+        else:
+            transformation_x = lambda x: x
+        if transform_y:
+            transformation_y = Transformations.__dict__[transform_y]
+        else:
+            transformation_y = lambda x: x
+        regression_stats = itz.make_regression_plot(x, y, data, regression_plot_path, transformation_x, transformation_y)
     else:
         try:
             os.mkdir("regression-plots")
@@ -173,47 +205,89 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
                         os.mkdir("regression-plots/"+y_column+"/")
                     except FileExistsError:
                         pass
-                    if log_x and log_y:
-                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+"log_"+x_column+"_"+"log_"+y_column+".png", log_x, log_y)
-                    elif log_x:
-                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+"log_"+x_column+"_"+y_column+".png", log_x, log_y)
-                    elif log_y:
-                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+x_column+"_"+"log_"+y_column+".png", log_x, log_y)
+                    if transform_x and transform_y:
+                        image_path = "regression-plots/"+y_column+"/"+str(transform_x)+"_"+x_column+"_"+str(transform_y)+"_"+y_column+".png"
+                    elif transform_x:
+                        image_path = "regression-plots/"+y_column+"/"+str(transform_x)+"_"+x_column+"_"+y_column+".png"
+                    elif transform_y:
+                        image_path = "regression-plots/"+y_column+"/"+x_column+"_"+str(transform_y)+"_"+y_column+".png"
                     else:
-                        regression_stats = itz.make_regression_plot(x_column, y_column, data, "regression-plots/"+y_column+"/"+x_column+"_"+y_column+".png", log_x, log_y)
+                        image_path = "regression-plots/"+y_column+"/"+x_column+"_"+y_column+".png"
+                    if transform_x:
+                        transformation_x = Transformations.__dict__[transform_x]
+                    else:
+                        transformation_x = lambda x: x
+                    if transform_y:
+                        transformation_y = Transformations.__dict__[transform_y]
+                    else:
+                        transformation_y = lambda x: x
+                    regression_stats = itz.make_regression_plot(x_column, y_column, data, image_path, transformation_x, transformation_y)
         elif y == "all_vars":
-            for column in data.columns:
-                if column.startswith("Unnamed") or column in ["all_vars"]:
+            for y_column in data.columns:
+                if y_column.startswith("Unnamed") or y_column in ["all_vars"]:
                     continue
-                print("working on:", x, column)
+                print("working on:", x, y_column)
                 try:
-                    os.mkdir("regression-plots/"+column+"/")
+                    os.mkdir("regression-plots/"+y_column+"/")
                 except FileExistsError:
                     pass
-                if log_x and log_y:
-                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+"log_"+x+"_"+"log_"+column+".png", log_x, log_y)
-                elif log_x:
-                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+"log_"+x+"_"+column+".png", log_x, log_y)
-                elif log_y:
-                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+x+"_"+"log_"+column+".png", log_x, log_y)
+                if transform_x and transform_y:
+                    image_path = "regression-plots/"+y_column+"/"+str(transform_x)+"_"+x+"_"+str(transform_y)+"_"+y_column+".png"
+                elif transform_x:
+                    image_path = "regression-plots/"+y_column+"/"+str(transform_x)+"_"+x+"_"+y_column+".png"
+                elif transform_y:
+                    image_path = "regression-plots/"+y_column+"/"+x+"_"+str(transform_y)+"_"+y_column+".png"
                 else:
-                    regression_stats = itz.make_regression_plot(x, column, data, "regression-plots/"+column+"/"+x+"_"+column+".png", log_x, log_y)
+                    image_path = "regression-plots/"+y_column+"/"+x+"_"+y_column+".png"
+                if transform_x:
+                    transformation_x = Transformations.__dict__[transform_x]
+                else:
+                    transformation_x = lambda x: x
+                if transform_y:
+                    transformation_y = Transformations.__dict__[transform_y]
+                else:
+                    transformation_y = lambda x: x
+                regression_stats = itz.make_regression_plot(x, y_column, data, image_path, transformation_x, transformation_y)
         else:
-            if log_x and log_y:
-                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+"log_"+x+"_"+"log_"+y+".png", log_x, log_y)
-            elif log_x:
-                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+"log_"+x+"_"+y+".png", log_x, log_y)
-            elif log_y:
-                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+x+"_"+"log_"+y+".png", log_x, log_y)
+            if transform_x and transform_y:
+                image_path = "regression-plots/"+y+"/"+str(transform_x)+"_"+x+"_"+str(transform_y)+"_"+y+".png"
+            elif transform_x:
+                image_path = "regression-plots/"+y+"/"+str(transform_x)+"_"+x+"_"+y+".png"
+            elif transform_y:
+                image_path = "regression-plots/"+y+"/"+x+"_"+str(transform_y)+"_"+y+".png"
             else:
-                regression_stats = itz.make_regression_plot(x, y, data, "regression-plots/"+x+"_"+y+".png", log_x, log_y)
-    
+                image_path = "regression-plots/"+y+"/"+x+"_"+y+".png"
+            if transform_x:
+                transformation_x = Transformations.__dict__[transform_x]
+            else:
+                transformation_x = lambda x: x
+            if transform_y:
+                transformation_y = Transformations.__dict__[transform_y]
+            else:
+                transformation_y = lambda x: x
+            regression_stats = itz.make_regression_plot(x, y_column, data, image_path, transformation_x, transformation_y)
     if residual_plot_path:
-        resid_plot_stats = itz.make_residual_plot(x, y, data, residual_plot_path, log_x, log_y)
+        if transform_x:
+            transformation_x = Transformations.__dict__[transform_x]
+        else:
+            transformation_x = lambda x: x
+        if transform_y:
+            transformation_y = Transformations.__dict__[transform_y]
+        else:
+            transformation_y = lambda x: x
+        resid_plot_stats = itz.make_residual_plot(x, y, data, residual_plot_path, transformation_x, transformation_y)
         regression_stats = {**regression_stats, **resid_plot_stats}
     
     if histogram_path:
-        func = itz.util.regress(x, y, data, log_x, log_y)[-1]
+        if transform_x:
+            transformation_x = Transformations.__dict__[transform_x]
+        else:
+            transformation_x = lambda x: x
+        if transform_y:
+            transformation_y = Transformations.__dict__[transform_y]
+        else:
+            transformation_y = lambda x: x
+        func = itz.util.regress(x, y, data, transformation_x, transformation_y)[-1]
         residual_df = pd.DataFrame()
         residual_df["resids"] = data[x].transform(func) - data[y]
         resid_hist_stats = itz.make_histogram("resids", residual_df, histogram_path)
@@ -249,21 +323,21 @@ def _parse(output_path: str, itz_data_path: str, lot_data_path: str, tract_data_
         lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
     else:
         model_data = pd.read_csv(itz_data_path, index_col="ITZ_GEOID")
-    orthoimagery_2010 = pd.read_csv("in-the-zone-data/2010-greenspace-orthoimagery.csv")
+    orthoimagery_2010 = pd.read_csv("in-the-zone-data/greenspace-orthoimagery/2010-greenspace-orthoimagery.csv")
     orthoimagery_2010.set_index("ITZ_GEOID", inplace=True) 
-    orthoimagery_2018 = pd.read_csv("in-the-zone-data/2018-greenspace-orthoimagery.csv") 
+    orthoimagery_2018 = pd.read_csv("in-the-zone-data/greenspace-orthoimagery/2018-greenspace-orthoimagery.csv") 
     orthoimagery_2018.set_index("ITZ_GEOID", inplace=True) 
-    distance_to_park = pd.read_csv("in-the-zone-data/tract_distance_from_park.csv") 
-    distance_to_park.set_index("ITZ_GEOID", inplace=True) 
+    distance_from_park = pd.read_csv("in-the-zone-data/greenspace-distance/tract_distance_from_park.csv") 
+    distance_from_park.set_index("ITZ_GEOID", inplace=True) 
     for index, _ in model_data.iterrows():
         try:
-            model_data.loc[index, "orig_feet_distance_to_park"] = distance_to_park.loc[index, "2010_distance_from_park"]
-            model_data.loc[index, "d_2010_2018_feet_distance_to_park"] = distance_to_park.loc[index, "d_2010_2018_distance_from_park"]
+            model_data.loc[index, "orig_feet_distance_from_park"] = distance_from_park.loc[index, "2010_distance_from_park"]
+            model_data.loc[index, "d_2010_2018_feet_distance_from_park"] = distance_from_park.loc[index, "d_2010_2018_distance_from_park"]
             model_data.loc[index, "orig_square_meter_greenspace_coverage"] = orthoimagery_2010.loc[index, "SQUARE_METER_GREENSPACE_COVERAGE"]
             model_data.loc[index, "d_2010_2018_square_meter_greenspace_coverage"] = orthoimagery_2018.loc[index, "SQUARE_METER_GREENSPACE_COVERAGE"]-orthoimagery_2010.loc[index, "SQUARE_METER_GREENSPACE_COVERAGE"]
         except:
-            model_data.loc[index, "orig_feet_distance_to_park"] = None
-            model_data.loc[index, "d_2010_2018_feet_distance_to_park"] = None
+            model_data.loc[index, "orig_feet_distance_from_park"] = None
+            model_data.loc[index, "d_2010_2018_feet_distance_from_park"] = None
             model_data.loc[index, "orig_square_meter_greenspace_coverage"] = None
             model_data.loc[index, "d_2010_2018_square_meter_greenspace_coverage"] = None
     model_data.to_csv(os.path.join(output_path, "integrated-itz-data.csv"))
@@ -310,7 +384,7 @@ if __name__ == "__main__":
     histogram_parser.add_argument("x", choices=itz.data.VAR_NAMES + ("all_vars",))
     histogram_parser.add_argument("data_path")
     histogram_parser.add_argument("--img_path", required=False)
-    histogram_parser.add_argument("--log", required=False, action="store_true")
+    histogram_parser.add_argument("--transform", required=False, choices=TRANSFORMATION_NAMES)
     histogram_parser.set_defaults(func=_make_histogram)
 
     regress_parser = subparsers.add_parser("regress")
@@ -320,8 +394,8 @@ if __name__ == "__main__":
     regress_parser.add_argument("--regression_plot_path", required=False)
     regress_parser.add_argument("--residual_plot_path", required=False)
     regress_parser.add_argument("--histogram_path", required=False)
-    regress_parser.add_argument("--log_x", required=False, action="store_true")
-    regress_parser.add_argument("--log_y", required=False, action="store_true")
+    regress_parser.add_argument("--transform_x", required=False, choices=TRANSFORMATION_NAMES)
+    regress_parser.add_argument("--transform_y", required=False, choices=TRANSFORMATION_NAMES)
     regress_parser.set_defaults(func=_make_regression)
 
     parse_parser = subparsers.add_parser("parse")
