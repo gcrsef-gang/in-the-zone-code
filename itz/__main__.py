@@ -227,24 +227,46 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
         _print_stats(regression_stats)
 
 
-def _parse(output_path: str, lot_data_path: str, tract_data_paths: List[str], verbose: bool):
+def _parse(output_path: str, itz_data_path: str, lot_data_path: str, tract_data_paths: List[str], verbose: bool):
     """Parse the raw ACS and PLUTO data into a directory of CSV files.
+    Integrates it with generated greenspace data. 
     """
-    tract_data = (
-        [pd.read_csv(path, index_col="ITZ_GEOID") for path in tract_data_paths]
-        if tract_data_paths is not None else [])
-    lot_data = (pd.read_csv(lot_data_path)
-                if lot_data_path is  not None else None)
-    lot_data, tract_data, model_data = itz.get_data(lot_data, tract_data, verbose)
-    try:
-        os.mkdir(output_path)
-    except FileExistsError:
-        pass
+    if not itz_data_path:
+        tract_data = (
+            [pd.read_csv(path, index_col="ITZ_GEOID") for path in tract_data_paths]
+            if tract_data_paths is not None else [])
+        lot_data = (pd.read_csv(lot_data_path)
+                    if lot_data_path is  not None else None)
+        lot_data, tract_data, model_data = itz.get_data(lot_data, tract_data, verbose)
+        try:
+            os.mkdir(output_path)
+        except FileExistsError:
+            pass
 
-    for i, tract_df in enumerate(tract_data):
-        tract_df.to_csv(os.path.join(output_path, f"tract-data-{i}.csv"))
-    model_data.to_csv(os.path.join(output_path, "itz-data.csv"))
-    lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
+        for i, tract_df in enumerate(tract_data):
+            tract_df.to_csv(os.path.join(output_path, f"tract-data-{i}.csv"))
+        model_data.to_csv(os.path.join(output_path, "itz-data.csv"))
+        lot_data.to_csv(os.path.join(output_path, "lot-data.csv"))
+    else:
+        model_data = pd.read_csv(itz_data_path, index_col="ITZ_GEOID")
+    orthoimagery_2010 = pd.read_csv("in-the-zone-data/2010-greenspace-orthoimagery.csv")
+    orthoimagery_2010.set_index("ITZ_GEOID", inplace=True) 
+    orthoimagery_2018 = pd.read_csv("in-the-zone-data/2018-greenspace-orthoimagery.csv") 
+    orthoimagery_2018.set_index("ITZ_GEOID", inplace=True) 
+    distance_to_park = pd.read_csv("in-the-zone-data/tract_distance_from_park.csv") 
+    distance_to_park.set_index("ITZ_GEOID", inplace=True) 
+    for index, _ in model_data.iterrows():
+        try:
+            model_data.loc[index, "orig_feet_distance_to_park"] = distance_to_park.loc[index, "2010_distance_from_park"]
+            model_data.loc[index, "d_2010_2018_feet_distance_to_park"] = distance_to_park.loc[index, "d_2010_2018_distance_from_park"]
+            model_data.loc[index, "orig_square_meter_greenspace_coverage"] = orthoimagery_2010.loc[index, "SQUARE_METER_GREENSPACE_COVERAGE"]
+            model_data.loc[index, "d_2010_2018_square_meter_greenspace_coverage"] = orthoimagery_2018.loc[index, "SQUARE_METER_GREENSPACE_COVERAGE"]-orthoimagery_2010.loc[index, "SQUARE_METER_GREENSPACE_COVERAGE"]
+        except:
+            model_data.loc[index, "orig_feet_distance_to_park"] = None
+            model_data.loc[index, "d_2010_2018_feet_distance_to_park"] = None
+            model_data.loc[index, "orig_square_meter_greenspace_coverage"] = None
+            model_data.loc[index, "d_2010_2018_square_meter_greenspace_coverage"] = None
+    model_data.to_csv(os.path.join(output_path, "integrated-itz-data.csv"))
 
 
 def _correlate(data_path: str, output_path: str, img_path: str, verbose: bool):
@@ -304,6 +326,7 @@ if __name__ == "__main__":
 
     parse_parser = subparsers.add_parser("parse")
     parse_parser.add_argument("output_path")
+    parse_parser.add_argument("--itz_data_path", required=False)
     parse_parser.add_argument("--lot_data_path", required=False)
     parse_parser.add_argument("--tract_data_paths", action="extend", required=False)
     parse_parser.set_defaults(func=_parse)
