@@ -114,7 +114,7 @@ def make_histogram(x: str, data: pd.DataFrame, path: str, transformation=lambda 
     """
     X = (data[x][data[x].notnull()]).transform(transformation)
     mean, stdev = X.mean(), X.std()
-    plt.hist(X)
+    plt.hist(X, bins=200)
     plt.title(f"{x}  Mean: {round(mean, 3)}  Stdev: {round(stdev, 3)}")
     plt.savefig(path)
     plt.clf()

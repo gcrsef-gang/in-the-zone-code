@@ -11,6 +11,7 @@ import scipy
 
 # Value for shifting variables before log transformations. 
 LOG_TRANSFORM_SHIFT = 0.1
+RECIPROCAL_TRANSFORM_SHIFT = 0.001
 
 
 def log_transform(X: pd.Series) -> pd.Series:

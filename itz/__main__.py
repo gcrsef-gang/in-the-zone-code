@@ -84,25 +84,33 @@ import pandas as pd
 import itz
 
 class Transformations(Enum):
-    logx = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
-    logy = lambda y: math.e ** y - itz.util.LOG_TRANSFORM_SHIFT
+    log = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
     # duplicates for convenient use
-    lnx = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
-    lny = lambda y: math.e ** y - itz.util.LOG_TRANSFORM_SHIFT
-    log10x = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 10))
-    log10y = lambda y: 10 ** y - itz.util.LOG_TRANSFORM_SHIFT
-    log2x = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 2))
-    log2y = lambda y: 2 ** y - itz.util.LOG_TRANSFORM_SHIFT
+    ln = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
+    log10 = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 10))
+    log2 = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 2))
+    expe = lambda y: math.e ** y - itz.util.LOG_TRANSFORM_SHIFT
+    exp2 = lambda y: 2 ** y - itz.util.LOG_TRANSFORM_SHIFT
+    exp10 = lambda y: 10 ** y - itz.util.LOG_TRANSFORM_SHIFT
+    square = lambda x: x*x
+    cube = lambda x: x**3
+    cbrt = lambda x: x**(1/3)
+    sqrt = lambda x: math.sqrt(x)
+    reciprocal = lambda x: 1/(x+itz.util.RECIPROCAL_TRANSFORM_SHIFT)
 
 TRANSFORMATION_NAMES = (
-    'logx',
-    'logy',
-    'lnx',
-    'lny',
-    'log10x',
-    'log10y',
-    'log2x',
-    'log2y',
+    'log',
+    'ln',
+    'log10',
+    'log2',
+    'expe',
+    'exp2',
+    'exp10',
+    'square',
+    'cube',
+    'cbrt',
+    'sqrt',
+    'reciprocal'
 )
 
 def _print_stats(dict_: Dict[str, float]):
@@ -120,7 +128,7 @@ def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: boo
     itz.make_sem_diagram(model_name, data, img_path, verbose)
 
 
-def _fit(model_string: str, model_path: str, data_path: str, cov_mat_path: str, verbose: bool):
+def _fit(model_string: str, model_path: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
     model_name = itz.model.ModelName.__dict__[model_string]
@@ -137,11 +145,15 @@ def _fit(model_string: str, model_path: str, data_path: str, cov_mat_path: str, 
     if verbose:
         print("Evaluating model...", end="")
         sys.stdout.flush()
-    stats, params = itz.evaluate(model)
+    stats, params, factors = itz.evaluate(model)
     if verbose:
         print("done!")
     _print_stats(stats)
     print(params)
+    print(factors)
+    stats.to_csv(os.path.join(output_path, "model_stats.csv"))
+    params.to_csv(os.path.join(output_path, "model_inspection.csv"))
+    factors.to_csv(os.path.join(output_path, "model_factors.csv"))
 
 
 def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
@@ -289,7 +301,7 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
             transformation_y = lambda x: x
         func = itz.util.regress(x, y, data, transformation_x, transformation_y)[-1]
         residual_df = pd.DataFrame()
-        residual_df["resids"] = data[x].transform(func) - data[y]
+        residual_df["resids"] = data[x].apply(func) - data[y]
         resid_hist_stats = itz.make_histogram("resids", residual_df, histogram_path)
         original_keys = list(resid_hist_stats.keys())
         for key in original_keys:
@@ -377,6 +389,7 @@ if __name__ == "__main__":
     fit_parser.add_argument("model_string", choices=itz.model.MODEL_NAMES)
     fit_parser.add_argument("model_path")
     fit_parser.add_argument("data_path")
+    fit_parser.add_argument("output_path")
     fit_parser.add_argument("--cov_mat_path", required=False)
     fit_parser.set_defaults(func=_fit)
 

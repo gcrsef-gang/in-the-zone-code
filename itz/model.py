@@ -184,4 +184,4 @@ def evaluate(model: semopy.Model) -> Tuple[Dict[str, float], pd.DataFrame]:
     """Returns evaluations of how well an SEM fits a dataset.
     """
     stats = semopy.calc_stats(model)
-    return {col: stats[col][0] for col in stats.columns}, model.inspect()
+    return {col: stats[col][0] for col in stats.columns}, model.inspect(), model.predict_factors()
