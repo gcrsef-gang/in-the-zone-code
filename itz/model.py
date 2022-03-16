@@ -35,6 +35,7 @@ MODEL_YEARS = {
 
 LOG_TRANSFORM_VARS = {
     ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
+    # ModelName.LONG_TERM: ()
 }
 
 
@@ -113,7 +114,7 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     densification_indicators = [
         f"d_{mid_yr}_{end_yr}_pop_density",
         f"d_{mid_yr}_{end_yr}_resid_unit_density",
-        f"d_{mid_yr}_{end_yr}_percent_multi_family_units"  # Provisional
+        # f"d_{mid_yr}_{end_yr}_percent_multi_family_units"  # Provisional
     ]
     _add_relation(["densification"] + densification_indicators,
                  ["=~"] + ["+"] * (len(densification_indicators) - 1))
@@ -184,4 +185,4 @@ def evaluate(model: semopy.Model) -> Tuple[Dict[str, float], pd.DataFrame]:
     """Returns evaluations of how well an SEM fits a dataset.
     """
     stats = semopy.calc_stats(model)
-    return {col: stats[col][0] for col in stats.columns}, model.inspect(), model.predict_factors()
+    return {col: stats[col][0] for col in stats.columns}, model.inspect()

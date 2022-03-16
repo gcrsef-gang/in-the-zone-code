@@ -76,8 +76,10 @@ import math
 import os
 import pickle
 import sys
+import subprocess
 from enum import Enum
 
+import semopy
 import numpy as np
 import pandas as pd
 
@@ -131,6 +133,7 @@ def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: boo
 def _fit(model_string: str, model_path: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
+    # TODO: figure out if semopy.efa.explore_cfa_model() is something worth exploring (see semopy documentation)
     model_name = itz.model.ModelName.__dict__[model_string]
     if verbose:
         print("Loading data... ", end="")
@@ -145,16 +148,35 @@ def _fit(model_string: str, model_path: str, data_path: str, output_path:str, co
     if verbose:
         print("Evaluating model...", end="")
         sys.stdout.flush()
-    stats, params, factors = itz.evaluate(model)
+    stats, params = itz.evaluate(model)
     if verbose:
         print("done!")
     _print_stats(stats)
     print(params)
-    print(factors)
-    stats.to_csv(os.path.join(output_path, "model_stats.csv"))
-    params.to_csv(os.path.join(output_path, "model_inspection.csv"))
-    factors.to_csv(os.path.join(output_path, "model_factors.csv"))
 
+    # factors = model.predict_factors(data)
+    # print(factors)
+    for stat in stats.keys():
+        stats[stat] = str(stats[stat])
+    try:
+        os.mkdir(output_path)
+    except FileExistsError:
+        pass
+    with open(os.path.join(output_path, "model_stats.json"), "w") as f:
+        json.dump(stats, f)
+        # print(stats)
+        # print(type(stats))
+        # f.write(stats)
+    params.to_csv(os.path.join(output_path, "model_inspection.csv"))
+    # factors.to_csv(os.path.join(output_path, "model_factors.csv"))
+
+    # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
+    # TODO: learn more about robust p-values (see semopy FAQ)
+    semopy.report(model, "In The Zone", output_path)
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "w/estimation_model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "w/covariances_model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "w/both_model_diagram.png")])
 
 def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
     """Visualize the distribution of a variable.

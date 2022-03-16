@@ -233,6 +233,17 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
     # model_df.drop(columns=["Unnamed: 0.4", "Unnamed: 0.3","Unnamed: 0.2","Unnamed: 0.1"], inplace=True)
     # model_df.set_index("Unnamed: 0", inplace=True)
     model_df.index.rename("ITZ_GEOID", inplace=True)
+
+    
+    for index, row in model_df.interrows():
+        if row["orig_percent_public_transport_trips_under_45_min"] < 0 or row["orig_percent_public_transport_trips_under_45_min"] > 100:
+            model_df.loc[index, "orig_percent_public_transport_trips_under_45_min"] = 0
+        if row["orig_percent_car_trips_under_45_min"] < 0 or row["orig_percent_car_trips_under_45_min"] > 100:
+            model_df.loc[index, "orig_percent_car_trips_under_45_min"] = 0
+        if row["d_2010_2018_percent_public_transport_trips_under_45_min"] < 0 or row["d_2010_2018_percent_public_transport_trips_under_45_min"] > 100:
+            model_df.loc[index, "d_2010_2018_percent_public_transport_trips_under_45_min"] = 0
+        if row["d_2010_2018_percent_car_trips_under_45_min"] < 0 or row["d_2010_2018_percent_car_trips_under_45_min"] > 100:
+            model_df.loc[index, "d_2010_2018_percent_car_trips_under_45_min"] = 0
     if verbose:
         print("Done!")
     # model_df.to_csv("itz-data.csv")

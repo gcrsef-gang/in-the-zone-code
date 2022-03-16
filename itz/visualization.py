@@ -22,7 +22,6 @@ def make_sem_diagram(model_name: ModelName, data: pd.DataFrame, path: str, verbo
     desc, _ = get_description(model_name, data, verbose)
     _ = semopy.semplot(semopy.Model(desc), filename=path)
 
-
 def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, transformation_x=lambda x:x, transformation_y=lambda x:x):
     """Creates a scatterplot with LSRL and returns descriptive statistics as a dictionary.
     """
