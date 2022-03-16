@@ -88,8 +88,8 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     Returns the description as a string as well as a set of all variable names.
     """
     start_yr, mid_yr, end_yr = MODEL_YEARS[model_name]
-    control_vars = {var for var in INDEPENDENT_VARS if var != "2002_2010_percent_upzoned"}
-
+    control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan"]}
+    dependent_vars = {var for var in DEPENDENT_VARS}
     relations = []
     variables = set()
 
@@ -124,7 +124,8 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     num_control_regressions = 0
     for dep_var in DEPENDENT_VARS:
         # Densification as an explanatory variable
-        _add_relation([dep_var, "densification"], ["~"])
+        if dep_var not in densification_indicators:
+            _add_relation([dep_var, "densification"], ["~"])
         num_examined_regressions += 1
         # Controls for densification
         for control in control_vars:
@@ -167,7 +168,18 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
 
     # Dependent variables
 
-    # for var_1, var_2 in itertools.combinations()
+    for var_1, var_2 in itertools.combinations(dependent_vars, 2):
+        if abs(regress(var_1, var_2, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+            _add_relation([var_1, var_2], ["~~"])
+            num_covariances += 1
+
+    # Relations to upzoning
+
+    for var in control_vars:
+        if abs(regress("2002_2010_percent_upzoned", var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+            _add_relation(["2002_2010_percent_upzoned", var], ["~~"])
+            num_covariances += 1
+
 
     model_description = "\n".join(relations)
 

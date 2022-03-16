@@ -22,7 +22,8 @@ CENSUS_TRACT_GEODATA_PATH = "in-the-zone-data/ny_2010_census_tracts.json"
 SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
-VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned',
+VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned', 
+        # '2002_2010_percent_upzoned_manhattan', '2002_2010_percent_upzoned_non_manhattan',
         '2010_2014_percent_upzoned', '2010_2018_percent_upzoned',
        '2014_2018_percent_upzoned', 'd_2010_2014_resid_units',
        'd_2010_2018_resid_units', 'd_2014_2018_resid_units',
@@ -81,6 +82,7 @@ DEPENDENT_VARS = ['d_2010_2018_resid_units',
        'd_2010_2018_square_meter_greenspace_coverage']
 
 INDEPENDENT_VARS = ['2002_2010_percent_upzoned', '2010_2018_percent_upzoned',
+        # '2002_2010_percent_upzoned_manhattan', '2002_2010_percent_upzoned_non_manhattan',
        'd_2010_2018_pop_density',
        'd_2010_2018_resid_unit_density', 'd_2010_2018_percent_multi_family_units',
        'orig_pop_density',

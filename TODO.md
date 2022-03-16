@@ -14,6 +14,6 @@
     * [ ] Add grouping by manhattan/non-manhattan
     * [ ] Add functionality for multiple transformations
     * [ ] Go through all regressions and transform for equal variance assumption and normality of residuals
-    * [ ] Make dependent variables covariate (using threshold)
+    * [x] Make dependent variables covariate (using threshold)
     * [ ] Try different semopy model types
 * [ ] Create demo
