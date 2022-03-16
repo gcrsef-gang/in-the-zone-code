@@ -1,6 +1,7 @@
 """Statistics utility functions.
 """
 
+from enum import Enum
 from typing import Tuple
 import math
 
@@ -14,6 +15,39 @@ LOG_TRANSFORM_SHIFT = 0.1
 RECIPROCAL_TRANSFORM_SHIFT = 0.001
 
 
+class Transformations(Enum):
+    log = (lambda x: math.log(x + LOG_TRANSFORM_SHIFT, math.e))
+    # duplicates for convenient use
+    ln = (lambda x: math.log(x + LOG_TRANSFORM_SHIFT, math.e))
+    log10 = (lambda x: math.log(x + LOG_TRANSFORM_SHIFT, 10))
+    log2 = (lambda x: math.log(x + LOG_TRANSFORM_SHIFT, 2))
+    expe = lambda y: math.e ** y - LOG_TRANSFORM_SHIFT
+    exp2 = lambda y: 2 ** y - LOG_TRANSFORM_SHIFT
+    exp10 = lambda y: 10 ** y - LOG_TRANSFORM_SHIFT
+    square = lambda x: x*x
+    cube = lambda x: x**3
+    cbrt = lambda x: x**(1/3)
+    sqrt = lambda x: math.sqrt(x)
+    reciprocal = lambda x: 1/(x+RECIPROCAL_TRANSFORM_SHIFT)
+    identity = lambda x: x
+
+
+TRANSFORMATION_NAMES = (
+    'log',
+    'ln',
+    'log10',
+    'log2',
+    'expe',
+    'exp2',
+    'exp10',
+    'square',
+    'cube',
+    'cbrt',
+    'sqrt',
+    'reciprocal'
+)
+
+
 def log_transform(X: pd.Series) -> pd.Series:
     """Returns the log-transformed version of a variable.
 
@@ -24,7 +58,7 @@ def log_transform(X: pd.Series) -> pd.Series:
     return (X + LOG_TRANSFORM_SHIFT).transform(math.log)
 
 
-def get_data_linreg(x: str, y: str, data: pd.DataFrame, transformation_x=lambda x:x, transformation_y=lambda x:x
+def get_data_linreg(x: str, y: str, data: pd.DataFrame, transformation_x=Transformations.identity, transformation_y=Transformations.identity
         ) -> Tuple[pd.Series, pd.Series]:
     """Obtains data from a DataFrame for a linear regression.
     """
@@ -43,13 +77,15 @@ def get_data_linreg(x: str, y: str, data: pd.DataFrame, transformation_x=lambda 
     return X, Y
 
 
-def regress(x: str, y: str, data: pd.DataFrame, transformation_x=lambda x:x, transformation_y=lambda x:x) -> Tuple:
+def regress(x: str, y: str, data: pd.DataFrame, transformation_x=Transformations.identity, transformation_y=Transformations.identity) -> Tuple:
     """Returns the slope, intercept, correlation coefficient, two-tailed p-value, coefficient of
     determination, and the resulting regression function.
 
     NOTE: function returned expects UNTRANSFORMED inputs and gives UNTRANSFORMED outputs.
     """
     X, Y = get_data_linreg(x, y, data, transformation_x, transformation_y)
+    assert not X.isnull().values.any()
+    assert not Y.isnull().values.any()
 
     r, p = scipy.stats.pearsonr(X, Y)
     fit, _, *_ = np.polyfit(X, Y, 1, full=True)

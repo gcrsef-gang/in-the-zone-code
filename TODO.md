@@ -11,9 +11,11 @@
 * [x] Move files in root directory to respective folders
 * [x] Update README with main script usage examples
 * [ ] Finish SEM model
-    * [ ] Add grouping by manhattan/non-manhattan
-    * [ ] Add functionality for multiple transformations
-    * [ ] Go through all regressions and transform for equal variance assumption and normality of residuals
+    * [ ] Split percent upzoned by borough
+    * [ ] Transform variables for roughly normal histograms, excluding the spikes at zero for percent upzoned.
+    * [ ] Add regressions between upzoning and dependent variables
+    * [ ] Add regressions between dependent variables
+    * [ ] Make gentrification latent variable using income, education, race
+    * [x] Add functionality for multiple transformations
     * [x] Make dependent variables covariate (using threshold)
-    * [ ] Try different semopy model types
 * [ ] Create demo

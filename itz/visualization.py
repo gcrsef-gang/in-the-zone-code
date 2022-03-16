@@ -13,7 +13,7 @@ from enum import Enum
 from typing import List, Tuple
 
 from .model import ModelName, get_description
-from .util import get_data_linreg, regress
+from .util import get_data_linreg, regress, Transformations
 
 
 def make_sem_diagram(model_name: ModelName, data: pd.DataFrame, path: str, verbose: bool=False):
@@ -22,22 +22,23 @@ def make_sem_diagram(model_name: ModelName, data: pd.DataFrame, path: str, verbo
     desc, _ = get_description(model_name, data, verbose)
     _ = semopy.semplot(semopy.Model(desc), filename=path)
 
-def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str, transformation_x=lambda x:x, transformation_y=lambda x:x):
+
+def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str,
+        transformation_x=Transformations.identity, transformation_y=Transformations.identity):
     """Creates a scatterplot with LSRL and returns descriptive statistics as a dictionary.
     """
     X, Y = get_data_linreg(x, y, data, transformation_x, transformation_y)
+    print(transformation_x, transformation_x)
 
     slope, intercept, r, two_tailed_p, r_squared, _ = regress(x, y, data, transformation_x, transformation_y)
 
     plt.plot(X, (slope * np.asarray(X) + intercept), '-r')
 
     if transformation_x:
-        # plt.xlabel("log_" + x)
         plt.xlabel("transformed_" + x)
     else:
         plt.xlabel(x)
     if transformation_y:
-        # plt.ylabel("log_" + y)
         plt.ylabel("transformed_" + y)
     else:
         plt.ylabel(y)
@@ -81,7 +82,8 @@ def make_correlation_matrix(data: pd.DataFrame, output_path: str, path: str):
     return x
 
 
-def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str, transformation_x=lambda x:x, transformation_y=lambda x:x):
+def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str,
+        transformation_x=Transformations.identity, transformation_y=Transformations.identity):
     """Creates a residual plot for a least-squares linear regression and returns descriptive
     statistics as a dictionary.
     """

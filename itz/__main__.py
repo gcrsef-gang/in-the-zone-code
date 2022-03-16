@@ -32,7 +32,7 @@ Parameters:
 - cov_mat_path (optional): path to file to store covariance matrix (CSV).
 
 regress <x> <y> <data_path> [--regression_plot_path PATH1] [--residual_plot_path PATH2] [--histogram_path PATH3] [--transform_x] [--transform_y]
-------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------
 Create visualizations for a regression between two variables. Descriptive statistics will be
 printed to the console.
 
@@ -47,7 +47,7 @@ Parameters:
 - transform_y: applies a transformation to y
 
 distribute <x> <data_path> [--img_path IMG_PATH] [--transform]
---------------------------------------------------------
+--------------------------------------------------------------
 Create a histogram of a variable.
 
 Parameters:
@@ -77,7 +77,6 @@ import os
 import pickle
 import sys
 import subprocess
-from enum import Enum
 
 import semopy
 import numpy as np
@@ -85,35 +84,6 @@ import pandas as pd
 
 import itz
 
-class Transformations(Enum):
-    log = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
-    # duplicates for convenient use
-    ln = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, math.e))
-    log10 = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 10))
-    log2 = (lambda x: math.log(x + itz.util.LOG_TRANSFORM_SHIFT, 2))
-    expe = lambda y: math.e ** y - itz.util.LOG_TRANSFORM_SHIFT
-    exp2 = lambda y: 2 ** y - itz.util.LOG_TRANSFORM_SHIFT
-    exp10 = lambda y: 10 ** y - itz.util.LOG_TRANSFORM_SHIFT
-    square = lambda x: x*x
-    cube = lambda x: x**3
-    cbrt = lambda x: x**(1/3)
-    sqrt = lambda x: math.sqrt(x)
-    reciprocal = lambda x: 1/(x+itz.util.RECIPROCAL_TRANSFORM_SHIFT)
-
-TRANSFORMATION_NAMES = (
-    'log',
-    'ln',
-    'log10',
-    'log2',
-    'expe',
-    'exp2',
-    'exp10',
-    'square',
-    'cube',
-    'cbrt',
-    'sqrt',
-    'reciprocal'
-)
 
 def _print_stats(dict_: Dict[str, float]):
     """Prints a dictionary of statistics.
@@ -201,7 +171,7 @@ def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbo
     else:
         histogram_path = img_path if img_path else x + ".png"
         if transform:
-            transformation = Transformations.__dict__[transform]
+            transformation = itz.util.Transformations.__dict__[transform]
         else:
             transformation = lambda x: x
         _print_stats(itz.make_histogram(x, data, histogram_path, transformation))
@@ -216,11 +186,11 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
 
     if regression_plot_path:
         if transform_x:
-            transformation_x = Transformations.__dict__[transform_x]
+            transformation_x = itz.util.Transformations.__dict__[transform_x]
         else:
             transformation_x = lambda x: x
         if transform_y:
-            transformation_y = Transformations.__dict__[transform_y]
+            transformation_y = itz.util.Transformations.__dict__[transform_y]
         else:
             transformation_y = lambda x: x
         regression_stats = itz.make_regression_plot(x, y, data, regression_plot_path, transformation_x, transformation_y)
@@ -248,11 +218,11 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
                     else:
                         image_path = "regression-plots/"+y_column+"/"+x_column+"_"+y_column+".png"
                     if transform_x:
-                        transformation_x = Transformations.__dict__[transform_x]
+                        transformation_x = itz.util.Transformations.__dict__[transform_x]
                     else:
                         transformation_x = lambda x: x
                     if transform_y:
-                        transformation_y = Transformations.__dict__[transform_y]
+                        transformation_y = itz.util.Transformations.__dict__[transform_y]
                     else:
                         transformation_y = lambda x: x
                     regression_stats = itz.make_regression_plot(x_column, y_column, data, image_path, transformation_x, transformation_y)
@@ -274,11 +244,11 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
                 else:
                     image_path = "regression-plots/"+y_column+"/"+x+"_"+y_column+".png"
                 if transform_x:
-                    transformation_x = Transformations.__dict__[transform_x]
+                    transformation_x = itz.util.Transformations.__dict__[transform_x]
                 else:
                     transformation_x = lambda x: x
                 if transform_y:
-                    transformation_y = Transformations.__dict__[transform_y]
+                    transformation_y = itz.util.Transformations.__dict__[transform_y]
                 else:
                     transformation_y = lambda x: x
                 regression_stats = itz.make_regression_plot(x, y_column, data, image_path, transformation_x, transformation_y)
@@ -292,21 +262,21 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
             else:
                 image_path = "regression-plots/"+y+"/"+x+"_"+y+".png"
             if transform_x:
-                transformation_x = Transformations.__dict__[transform_x]
+                transformation_x = itz.util.Transformations.__dict__[transform_x]
             else:
                 transformation_x = lambda x: x
             if transform_y:
-                transformation_y = Transformations.__dict__[transform_y]
+                transformation_y = itz.util.Transformations.__dict__[transform_y]
             else:
                 transformation_y = lambda x: x
             regression_stats = itz.make_regression_plot(x, y_column, data, image_path, transformation_x, transformation_y)
     if residual_plot_path:
         if transform_x:
-            transformation_x = Transformations.__dict__[transform_x]
+            transformation_x = itz.util.Transformations.__dict__[transform_x]
         else:
             transformation_x = lambda x: x
         if transform_y:
-            transformation_y = Transformations.__dict__[transform_y]
+            transformation_y = itz.util.Transformations.__dict__[transform_y]
         else:
             transformation_y = lambda x: x
         resid_plot_stats = itz.make_residual_plot(x, y, data, residual_plot_path, transformation_x, transformation_y)
@@ -314,11 +284,11 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
     
     if histogram_path:
         if transform_x:
-            transformation_x = Transformations.__dict__[transform_x]
+            transformation_x = itz.util.Transformations.__dict__[transform_x]
         else:
             transformation_x = lambda x: x
         if transform_y:
-            transformation_y = Transformations.__dict__[transform_y]
+            transformation_y = itz.util.Transformations.__dict__[transform_y]
         else:
             transformation_y = lambda x: x
         func = itz.util.regress(x, y, data, transformation_x, transformation_y)[-1]
@@ -419,7 +389,7 @@ if __name__ == "__main__":
     histogram_parser.add_argument("x", choices=itz.data.VAR_NAMES + ("all_vars",))
     histogram_parser.add_argument("data_path")
     histogram_parser.add_argument("--img_path", required=False)
-    histogram_parser.add_argument("--transform", required=False, choices=TRANSFORMATION_NAMES)
+    histogram_parser.add_argument("--transform", required=False, choices=itz.util.TRANSFORMATION_NAMES)
     histogram_parser.set_defaults(func=_make_histogram)
 
     regress_parser = subparsers.add_parser("regress")
@@ -429,8 +399,8 @@ if __name__ == "__main__":
     regress_parser.add_argument("--regression_plot_path", required=False)
     regress_parser.add_argument("--residual_plot_path", required=False)
     regress_parser.add_argument("--histogram_path", required=False)
-    regress_parser.add_argument("--transform_x", required=False, choices=TRANSFORMATION_NAMES)
-    regress_parser.add_argument("--transform_y", required=False, choices=TRANSFORMATION_NAMES)
+    regress_parser.add_argument("--transform_x", required=False, choices=itz.util.TRANSFORMATION_NAMES)
+    regress_parser.add_argument("--transform_y", required=False, choices=itz.util.TRANSFORMATION_NAMES)
     regress_parser.set_defaults(func=_make_regression)
 
     parse_parser = subparsers.add_parser("parse")
