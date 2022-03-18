@@ -13,8 +13,8 @@
 * [ ] Finish SEM model
     * [ ] Split percent upzoned by borough
     * [ ] Transform variables for roughly normal histograms, excluding the spikes at zero for percent upzoned.
-    * [ ] Add regressions between upzoning and dependent variables
-    * [ ] Add regressions between dependent variables
+    * [x] Add regressions between upzoning and dependent variables
+    * [x] Add regressions between dependent variables
     * [ ] Make gentrification latent variable using income, education, race
     * [x] Add functionality for multiple transformations
     * [x] Make dependent variables covariate (using threshold)

@@ -4,6 +4,7 @@
 from itz.data import get_data
 from itz.model import evaluate, fit, get_description
 from itz.visualization import (make_sem_diagram, make_regression_plot, make_residual_plot,
-                               make_histogram, make_correlation_matrix, make_map_vis)
+                               make_histogram, make_correlation_matrix, make_covariance_matrix,
+                               make_map_vis)
 
 from . import data, model, util, visualization

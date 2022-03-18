@@ -114,6 +114,7 @@ def _fit(model_string: str, model_path: str, data_path: str, output_path:str, co
     model = itz.fit(*itz.get_description(model_name, data, verbose), data, verbose)
     # TODO: figure out how to save/load a model
     if cov_mat_path is not None:
+        pd.DataFrame(model.calc_sigma()[0])
         np.savetxt(cov_mat_path, model.calc_sigma()[0], delimiter=",")
     if verbose:
         print("Evaluating model...", end="")
@@ -143,10 +144,13 @@ def _fit(model_string: str, model_path: str, data_path: str, output_path:str, co
     # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
     # TODO: learn more about robust p-values (see semopy FAQ)
     semopy.report(model, "In The Zone", output_path)
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "w/estimation_model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "w/covariances_model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "w/both_model_diagram.png")])
+    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
+    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
+    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
+    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/4')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_both_model_diagram.png')}")
+    # subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
+    # subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
+    # subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
 
 def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
     """Visualize the distribution of a variable.
@@ -351,6 +355,10 @@ def _correlate(data_path: str, output_path: str, img_path: str, verbose: bool):
     data = pd.read_csv(data_path)
     itz.make_correlation_matrix(data, output_path, img_path)
 
+def _covariance(data_path: str, output_path: str, img_path: str, verbose: bool):
+    data = pd.read_csv(data_path)
+    itz.make_covariance_matrix(data, output_path, img_path)
+
 
 def _visualize(geodata_path: str, data_path: str, output_path: str, columns: List[str], lots: bool,
         verbose: bool):
@@ -366,7 +374,6 @@ def _visualize(geodata_path: str, data_path: str, output_path: str, columns: Lis
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(usage=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true")
     subparsers = parser.add_subparsers()
@@ -415,6 +422,12 @@ if __name__ == "__main__":
     correlate_parser.add_argument("output_path")
     correlate_parser.add_argument("--img_path", required=False)
     correlate_parser.set_defaults(func=_correlate)
+
+    covariance_parser = subparsers.add_parser("covariance")
+    covariance_parser.add_argument("data_path")
+    covariance_parser.add_argument("output_path")
+    covariance_parser.add_argument("--img_path", required=False)
+    covariance_parser.set_defaults(func=_covariance)
 
     vis_parser = subparsers.add_parser("vis")
     vis_parser.add_argument("geodata_path")

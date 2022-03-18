@@ -6,13 +6,14 @@ import itz
 
 
 # BOROUGHS = ["MN", "BK", "SI", "QN", "BX"]
-# BOROUGHS = ["MN", "BK", "QN", "BX"]
-BOROUGHS = ["MN"]
+BOROUGHS = ["MN", "BK", "QN", "BX"]
+# BOROUGHS = ["MN"]
 # Nothing was upzoned in SI
 BOROUGH_TRANSFORMATIONS = {
-    "MN": (itz.util.Transformations.ln, itz.util.Transformations.identity),
-    "BK": (itz.util.Transformations.identity, itz.util.Transformations.identity),
-    "QN": (itz.util.Transformations.identity, itz.util.Transformations.identity),
+    # "MN": (itz.util.Transformations.ln, itz.util.Transformations.identity),
+    "MN": (itz.util.Transformations.cube, itz.util.Transformations.identity),
+    "BK": (itz.util.Transformations.sqrt, itz.util.Transformations.identity),
+    "QN": (itz.util.Transformations.cbrt, itz.util.Transformations.identity),
     "BX": (itz.util.Transformations.identity, itz.util.Transformations.identity)
 }
 
@@ -29,6 +30,7 @@ def do_regression(df, name, transform_x, transform_y):
     x, y = "2002_2010_percent_upzoned", "d_2010_2018_pop_density"
     regression_stats = itz.make_regression_plot(x, y, df, f"{name}_regression.png", transform_x, transform_y)
     resid_plot_stats = itz.make_residual_plot(x, y, df, f"{name}_resid_plot.png", transform_x, transform_y)
+    print(f"{name}_resid_plot.png")
     # func = itz.util.regress(x, y, df)[-1]
     func = itz.util.regress(x, y, df, transform_x, transform_y)[-1]
     residual_df = pd.DataFrame()

@@ -68,7 +68,25 @@ def make_correlation_matrix(data: pd.DataFrame, output_path: str, path: str):
     # logged = data[x][data[x].notnull()][data[x] > 0].transform(math.log)
     # data[x] = logged
     x = data.corr()
-    print(len(data.columns))
+    print("Number of columns:", len(data.columns))
+    # x.to_csv("correlation_matrix.csv")
+    # x["d_2010_2018_pop_density"].to_csv("d_2010_2018_pop_density_correlations.csv")
+    x.to_csv(output_path)
+    # plt.imshow(x)
+    plt.figure(figsize=(40,40))
+    sn.heatmap(x, cmap='coolwarm')
+    # plt.savefig("test.png")
+    if path:
+        plt.savefig(path)
+        plt.clf()
+    return x
+
+def make_covariance_matrix(data: pd.DataFrame, output_path: str, path: str):
+    # x = "2010_2018_percent_upzoned"
+    # logged = data[x][data[x].notnull()][data[x] > 0].transform(math.log)
+    # data[x] = logged
+    x = data.cov()
+    print("Number of columns:", len(data.columns))
     # x.to_csv("correlation_matrix.csv")
     # x["d_2010_2018_pop_density"].to_csv("d_2010_2018_pop_density_correlations.csv")
     x.to_csv(output_path)
