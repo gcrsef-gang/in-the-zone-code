@@ -144,13 +144,14 @@ def _fit(model_string: str, model_path: str, data_path: str, output_path:str, co
     # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
     # TODO: learn more about robust p-values (see semopy FAQ)
     semopy.report(model, "In The Zone", output_path)
-    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
-    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
-    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
-    subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/4')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_both_model_diagram.png')}")
-    # subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
-    # subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
-    # subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
+    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
+    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
+    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
+    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/4')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_both_model_diagram.png')}")
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
 
 def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
     """Visualize the distribution of a variable.

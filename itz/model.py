@@ -143,7 +143,7 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
 
     # Add regressions between upzoning and dependent variables
     for dep_var in DEPENDENT_VARS:
-        if dep_var == f"d_{mid_yr}_{end_yr}_median_home_value":
+        if dep_var == f"d_{mid_yr}_{end_yr}_median_home_value" or dep_var in densification_indicators:
             continue
         if abs(regress(early_upzoning, dep_var, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
             _add_relation([early_upzoning, dep_var], ["~"])
@@ -179,16 +179,18 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
 
-    # Add covariances between densification indicators
-
-    for var_1, var_2 in itertools.combinations(densification_indicators, 2):
-        _add_relation([var_1, var_2], ["~~"])
-        num_covariances += 1
+    # # Add covariances between densification indicators
+    # Commented out - could be causing problems with interactions between densification
+    # for var_1, var_2 in itertools.combinations(densification_indicators, 2):
+    #     _add_relation([var_1, var_2], ["~~"])
+    #     num_covariances += 1
 
     # Add covariances between dependent variables
 
     for var_1, var_2 in itertools.combinations(dependent_vars, 2):
         if (var_1, var_2) in dependent_regressions or (var_2, var_1) in dependent_regressions:
+            continue
+        if var_1 in densification_indicators and var_2 in densification_indicators:
             continue
         if abs(regress(var_1, var_2, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
