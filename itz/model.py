@@ -100,8 +100,10 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
     start_yr, mid_yr, end_yr = MODEL_YEARS[model_name]
     early_upzoning = model_type
     print(early_upzoning, "early_upzoning")
-    control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan", "d_2010_2018_pop_density", "d_2010_2018_resid_unit_density"]}
-    dependent_vars = {var for var in DEPENDENT_VARS}
+    # control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan", "d_2010_2018_pop_density", "d_2010_2018_resid_unit_density"]}
+    control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan"]}
+    # dependent_vars = {var for var in DEPENDENT_VARS}
+    dependent_vars = {var for var in DEPENDENT_VARS if var not in ["d_2010_2018_pop_density", "d_2010_2018_resid_unit_density"  ]}
     relations = []
     variables = set()
 
@@ -136,10 +138,12 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
     num_control_regressions = 0
     for dep_var in DEPENDENT_VARS:
         # Densification as an explanatory variable
-        if dep_var not in densification_indicators:
-            _add_relation([dep_var, "densification"], ["~"])
+        if dep_var in densification_indicators:
+            continue
+        _add_relation([dep_var, "densification"], ["~"])
         num_examined_regressions += 1
-        # Controls for densification
+        # Controls for dependent variables
+        # maybe change so that densification indicators aren't getting controlled also?
         for control in control_vars:
             if abs(regress(dep_var, control, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
                 _add_relation([dep_var, control], ["~"])
@@ -168,14 +172,16 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
     for dep_var_1, dep_var_2 in itertools.combinations(DEPENDENT_VARS, 2):
         if dep_var_1 in densification_indicators and dep_var_2 in densification_indicators:
             continue
-        if abs(regress(dep_var_1, dep_var_2, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-            _add_relation([dep_var_1, dep_var_2], ["~"])
-            num_examined_regressions += 1
-            dependent_regressions.append((dep_var_1, dep_var_2))
-        if abs(regress(dep_var_2, dep_var_1, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-            _add_relation([dep_var_2, dep_var_1], ["~"])
-            num_examined_regressions += 1
-            dependent_regressions.append((dep_var_2, dep_var_1))
+        if dep_var_1 not in densification_indicators:
+            if abs(regress(dep_var_1, dep_var_2, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+                _add_relation([dep_var_1, dep_var_2], ["~"])
+                num_examined_regressions += 1
+                dependent_regressions.append((dep_var_1, dep_var_2))
+        if dep_var_2 not in densification_indicators:
+            if abs(regress(dep_var_2, dep_var_1, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+                _add_relation([dep_var_2, dep_var_1], ["~"])
+                num_examined_regressions += 1
+                dependent_regressions.append((dep_var_2, dep_var_1))
 
     num_control_regressions += 3
     
@@ -189,16 +195,23 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
     print(len(control_vars), "control vars pre removal")
     control_vars = variables.intersection(control_vars)
     print(len(control_vars), "control vars post removal")
-    # more explanatory variables as controls:
+
+    # Add all controls for densification
     for control in control_vars:
+        if control in densification_indicators or control == f"{mid_yr}_{end_yr}_percent_upzoned":
+            continue
         print(control)
         _add_relation(["densification", control], ["~"])
 
+
+    # Add covariances between controls
     num_covariances = 0
     for var_1, var_2, in itertools.combinations(control_vars, 2):
         if abs(regress(var_1, var_2, data)[3]) < CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
+        # _add_relation([var_1, var_2], ["~~"])
+        # num_covariances += 1
 
     # # Add covariances between densification indicators
     # Commented out - could be causing problems with interactions between densification
@@ -216,12 +229,25 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
         if abs(regress(var_1, var_2, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
+        # _add_relation([var_1, var_2], ["~~"])
+        # num_covariances += 1
+
+    # Add covariances between densification indicators and dependent variables
+    for densification_indicator in densification_indicators:
+        for var in dependent_vars:
+            if abs(regress(densification_indicator, var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+                _add_relation([densification_indicator, var], ["~~"])
+                num_covariances += 1
 
     # Add covariances for upzoning and control variables
     for var in control_vars:
+        if var in densification_indicators:
+            continue
         if abs(regress(early_upzoning, var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([early_upzoning, var], ["~~"])
             num_covariances += 1
+        # _add_relation([early_upzoning, var], ["~~"])
+        # num_covariances += 1
 
 
     model_description = "\n".join(relations)
