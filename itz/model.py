@@ -14,8 +14,11 @@ from .util import log_transform, regress
 
 
 DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.005
+# DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 1
 CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.01
+# CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 1
 REGRESSION_SIGNIFICANCE_THRESHOLD = 0.01
+# REGRESSION_SIGNIFICANCE_THRESHOLD = 1
 
 
 class ModelName(Enum):
@@ -38,6 +41,12 @@ LOG_TRANSFORM_VARS = {
     ModelName.LONG_TERM: ()
 }
 
+MODEL_TYPE_UPZONED_VARS = {
+    "manhattan" : "2002_2010_percent_upzoned_manhattan",
+    "non_manhattan" : "2002_2010_percent_upzoned_non_manhattan",
+    "unified" : "2002_2010_percent_upzoned",
+}
+
 
 def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> semopy.Model:
     """Fits an SEM to a dataset. 
@@ -54,7 +63,7 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
             model_data[var[4:]] = data[var[4:]]
             log_transform_vars.add(var[4:])
     model_data = model_data.dropna()
-
+    print(model_data, "after fit drop")
     if verbose:
         print("Log transforming: " + ", ".join(log_transform_vars), end="" + "... ")
         sys.stdout.flush()
@@ -76,19 +85,22 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
         print("Fitting SEM to data... ", end="")
         sys.stdout.flush()
     model.fit(model_data)
+    # model.fit(model_data, obj='GLS')
     if verbose:
         print("done!")
     return model
 
 
-def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
+def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, verbose=False
                         ) -> Tuple[str, Set[str]]:
     """Creates a semopy model description for one of three possible SEMs.
 
     Returns the description as a string as well as a set of all variable names.
     """
     start_yr, mid_yr, end_yr = MODEL_YEARS[model_name]
-    control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan"]}
+    early_upzoning = model_type
+    print(early_upzoning, "early_upzoning")
+    control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan", "d_2010_2018_pop_density", "d_2010_2018_resid_unit_density"]}
     dependent_vars = {var for var in DEPENDENT_VARS}
     relations = []
     variables = set()
@@ -137,16 +149,19 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     _add_relation(["densification", f"{mid_yr}_{end_yr}_percent_upzoned"], ["~"])
 
     # Early upzoning as an explanatory variable for densification
-    early_upzoning = f"{start_yr}_{mid_yr}_percent_upzoned"
+    # early_upzoning = f"{start_yr}_{mid_yr}_percent_upzoned"
     _add_relation(["densification", early_upzoning], ["~"])
+
+
+
     _add_relation([f"d_{mid_yr}_{end_yr}_median_home_value", early_upzoning], ["~"])
 
     # Add regressions between upzoning and dependent variables
     for dep_var in DEPENDENT_VARS:
         if dep_var == f"d_{mid_yr}_{end_yr}_median_home_value" or dep_var in densification_indicators:
             continue
-        if abs(regress(early_upzoning, dep_var, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-            _add_relation([early_upzoning, dep_var], ["~"])
+        if abs(regress(dep_var, early_upzoning, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([dep_var, early_upzoning], ["~"])
             num_examined_regressions += 1
 
     dependent_regressions = []
@@ -171,7 +186,13 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
     # Remove controls not involved in regressions. 
     # Note: does this actually do that? i see no indication that variables are actually being
     # removed from control_vars. - jam
+    print(len(control_vars), "control vars pre removal")
     control_vars = variables.intersection(control_vars)
+    print(len(control_vars), "control vars post removal")
+    # more explanatory variables as controls:
+    for control in control_vars:
+        print(control)
+        _add_relation(["densification", control], ["~"])
 
     num_covariances = 0
     for var_1, var_2, in itertools.combinations(control_vars, 2):
@@ -198,8 +219,8 @@ def get_description(model_name: ModelName, data: pd.DataFrame, verbose=False
 
     # Add covariances for upzoning and control variables
     for var in control_vars:
-        if abs(regress("2002_2010_percent_upzoned", var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
-            _add_relation(["2002_2010_percent_upzoned", var], ["~~"])
+        if abs(regress(early_upzoning, var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+            _add_relation([early_upzoning, var], ["~~"])
             num_covariances += 1
 
 

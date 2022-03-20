@@ -1,0 +1,13 @@
+upzoning_type = unified (all tracts)
+upzoning_zeros = true 
+na_in_data = false
+DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.005
+CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.01
+REGRESSION_SIGNIFICANCE_THRESHOLD = 0.01
+densification_indicator_covariance = false
+upzoning_dependent_regression = true
+dependent_dependent_regression = true
+control_covariance = true
+dependent_dependent = true
+obj_function = MLW
+solver = SLSQP

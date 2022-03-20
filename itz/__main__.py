@@ -74,6 +74,7 @@ import argparse
 import json
 import math
 import os
+from os.path import dirname
 import pickle
 import sys
 import subprocess
@@ -100,18 +101,21 @@ def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: boo
     itz.make_sem_diagram(model_name, data, img_path, verbose)
 
 
-def _fit(model_string: str, model_path: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
+def _fit(model_string: str, model_type: str, model_path: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
     # TODO: figure out if semopy.efa.explore_cfa_model() is something worth exploring (see semopy documentation)
     model_name = itz.model.ModelName.__dict__[model_string]
+    model_type_string = itz.model.MODEL_TYPE_UPZONED_VARS[model_type]
     if verbose:
         print("Loading data... ", end="")
         sys.stdout.flush()
     data = pd.read_csv(data_path)
+    data = data[~data[model_type_string].isna()]
+    print(data)
     if verbose:
         print("done!")
-    model = itz.fit(*itz.get_description(model_name, data, verbose), data, verbose)
+    model = itz.fit(*itz.get_description(model_name, model_type_string, data, verbose), data, verbose)
     # TODO: figure out how to save/load a model
     if cov_mat_path is not None:
         pd.DataFrame(model.calc_sigma()[0])
@@ -125,8 +129,9 @@ def _fit(model_string: str, model_path: str, data_path: str, output_path:str, co
     _print_stats(stats)
     print(params)
 
-    # factors = model.predict_factors(data)
-    # print(factors)
+    factors = model.predict_factors(data)
+    print(factors)
+    print(type(factors))
     for stat in stats.keys():
         stats[stat] = str(stats[stat])
     try:
@@ -143,15 +148,15 @@ def _fit(model_string: str, model_path: str, data_path: str, output_path:str, co
 
     # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
     # TODO: learn more about robust p-values (see semopy FAQ)
-    semopy.report(model, "In The Zone", output_path)
-    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
-    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
-    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
-    # subprocess.run(f"dot {os.path.join(output_path, 'In The Zone/plots/4')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_both_model_diagram.png')}")
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'In The Zone'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
+    semopy.report(model, "report", output_path)
+    # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
+    # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
+    # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
+    # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/4')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_both_model_diagram.png')}")
+    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
+    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
 
 def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
     """Visualize the distribution of a variable.
@@ -387,6 +392,7 @@ if __name__ == "__main__":
 
     fit_parser = subparsers.add_parser("fit")
     fit_parser.add_argument("model_string", choices=itz.model.MODEL_NAMES)
+    fit_parser.add_argument("model_type", choices=itz.model.MODEL_TYPE_UPZONED_VARS)
     fit_parser.add_argument("model_path")
     fit_parser.add_argument("data_path")
     fit_parser.add_argument("output_path")
