@@ -10,7 +10,7 @@ import pandas as pd
 import semopy
 
 from .data import DENSIFICATION_MEASURES, CONTROL_VARS, DEPENDENT_VARS, EARLY_UPZONING
-from .util import log_transform, regress
+from .util import log_transform, square_transform, regress
 
 
 DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.005
@@ -42,6 +42,19 @@ LOG_TRANSFORM_VARS = {
     ModelName.LONG_TERM: ()
 }
 
+# SQRT_TRANSFORM_VARS = {
+#     # ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
+#     ModelName.LONG_TERM: ('d_2010_2018_square_meter_greenspace_coverage',
+#         ''),
+#     ModelName.LONG_TERM: ()
+# }
+# SQUARE_TRANSFORM_VARS = {
+#     # ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
+#     ModelName.LONG_TERM: (',
+#         ''),
+#     ModelName.LONG_TERM: ()
+# }
+
 MODEL_TYPE_UPZONED_VARS = {
     "manhattan" : "2002_2010_percent_upzoned_manhattan",
     "non_manhattan" : "2002_2010_percent_upzoned_non_manhattan",
@@ -55,12 +68,16 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
     # Transform data
 
     log_transform_vars = set()
+    square_transform_vars = set()
 
     model_data = pd.DataFrame()
     for var in variables:
         if var in data.columns:
             model_data[var] = data[var]
         elif var[:4] == "log_":
+            model_data[var[4:]] = data[var[4:]]
+            log_transform_vars.add(var[4:])
+        elif var[:4] == "square_":
             model_data[var[4:]] = data[var[4:]]
             log_transform_vars.add(var[4:])
     model_data = model_data.dropna()
@@ -71,6 +88,8 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
         sys.stdout.flush()
     for var in log_transform_vars:
         model_data["log_" + var] = log_transform(model_data[var])
+    for var in square_transform_vars:
+        model_data["square_" + var] = square_transform(model_data[var])
     if verbose:
         print("done!")
 
@@ -205,6 +224,34 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
         _add_relation([dep_var, *significant_controls], ["~"] + ["+"] * (len(CONTROL_VARS) - 1))
         num_control_regressions += len(significant_controls)
 
+    for densification_var in DENSIFICATION_MEASURES:
+        _add_relation([densification_var, "2010_2018_percent_upzoned"], ["~"])
+        for control in CONTROL_VARS: 
+            if control == "2010_2018_percent_upzoned":
+                continue
+            # if abs(regress(densification_var, control, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([densification_var, control], ["~"])
+            num_control_regressions += 1
+
+    dependent_regressions = []
+    for var_1, var_2 in itertools.combinations(DEPENDENT_VARS, 2):
+        if abs(regress(var_1, var_2, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([var_1, var_2], ["~"])
+            dependent_regressions.append([var_1, var_2])
+            num_examined_regressions += 1
+        if abs(regress(var_2, var_1, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([var_2, var_1], ["~"])
+            dependent_regressions.append([var_2, var_1])
+            num_examined_regressions += 1
+
+    for var in DEPENDENT_VARS:
+        if abs(regress(var, EARLY_UPZONING, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([var, EARLY_UPZONING], ["~"])
+            
+    for var in DEPENDENT_VARS:
+        if abs(regress(var, "2010_2018_percent_upzoned", data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation([var, "2010_2018_percent_upzoned"], ["~"])
+
     # Covariances
     num_covariances = 0
 
@@ -215,21 +262,27 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
         # _add_relation([var_1, var_2], ["~~"])
         # num_covariances += 1
 
+    # Add covariance between densification variables.
+    # Could be messing with the stuff. 
     for var_1, var_2 in itertools.combinations(DENSIFICATION_MEASURES, 2):
         if abs(regress(var_1, var_2, data)[3]) < CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
-        # _add_relation([var_1, var_2], ["~~"])
-        # num_covariances += 1
+        _add_relation([var_1, var_2], ["~~"])
+        num_covariances += 1
 
-    # Add covariances between densification indicators and dependent variables
-    for densification_indicator in densification_indicators:
-        for var in dependent_vars:
-            if abs(regress(densification_indicator, var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
-                _add_relation([densification_indicator, var], ["~~"])
-                num_covariances += 1
+    _add_relation([EARLY_UPZONING, "2010_2018_percent_upzoned"], ["~~"])
+
+    # # Add covariances between densification indicators and dependent variables
+    # for densification_indicator in densification_indicators:
+    #     for var in dependent_vars:
+    #         if abs(regress(densification_indicator, var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+    #             _add_relation([densification_indicator, var], ["~~"])
+    #             num_covariances += 1
 
     for var_1, var_2 in itertools.combinations(DEPENDENT_VARS, 2):
+        if [var_1, var_2] in dependent_regressions:
+            continue
         if abs(regress(var_1, var_2, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1

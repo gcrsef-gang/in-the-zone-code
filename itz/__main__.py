@@ -78,7 +78,7 @@ from os.path import dirname
 import pickle
 import sys
 import subprocess
-
+import time
 import semopy
 import numpy as np
 import pandas as pd
@@ -116,7 +116,13 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
     if verbose:
         print("done!")
     model_description, variables = itz.get_description(model_name, model_type_string, data, verbose)
+    print(model_description)
+
+    beginning_fit = time.time()
+
     model = itz.fit(model_description, variables, data, verbose)
+    ending_fit = time.time()
+    print(f"Time to fit: {ending_fit-beginning_fit}")
     # TODO: figure out how to save/load a model
     if cov_mat_path is not None:
         pd.DataFrame(model.calc_sigma()[0])

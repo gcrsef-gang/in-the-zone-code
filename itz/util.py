@@ -57,6 +57,15 @@ def log_transform(X: pd.Series) -> pd.Series:
     """
     return (X + LOG_TRANSFORM_SHIFT).transform(math.log)
 
+def square_transform(X: pd.Series) -> pd.Series:
+    """Returns the log-transformed version of a variable.
+
+    NOTE: Assumes:
+    - All values are >= 0
+    - No NaNs present in data
+    """
+    return (X).transform(lambda x: x*x)/10000
+
 
 def get_data_linreg(x: str, y: str, data: pd.DataFrame, transformation_x=Transformations.identity, transformation_y=Transformations.identity
         ) -> Tuple[pd.Series, pd.Series]:
