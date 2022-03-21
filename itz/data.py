@@ -62,7 +62,6 @@ VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned',
        'orig_square_meter_greenspace_coverage', 'orig_feet_distance_from_park')
        
 DEPENDENT_VARS = ['d_2010_2018_resid_units',
-    #    'd_2010_2018_pop_density', 'd_2010_2018_resid_unit_density',
        'd_2010_2018_per_capita_income',
        'd_2010_2018_percent_non_hispanic_or_latino_white_alone',
        'd_2010_2018_percent_non_hispanic_black_alone',
@@ -81,10 +80,9 @@ DEPENDENT_VARS = ['d_2010_2018_resid_units',
        'd_2010_2018_feet_distance_from_park',
        'd_2010_2018_square_meter_greenspace_coverage']
 
-INDEPENDENT_VARS = ['2002_2010_percent_upzoned', '2010_2018_percent_upzoned',
-        '2002_2010_percent_upzoned_manhattan', '2002_2010_percent_upzoned_non_manhattan',
-       'd_2010_2018_pop_density',
-       'd_2010_2018_resid_unit_density', 
+DENSIFICATION_MEASURES = ['d_2010_2018_pop_density', 'd_2010_2018_resid_unit_density']
+
+CONTROL_VARS = ['2010_2018_percent_upzoned',
        'orig_pop_density',
        'orig_percent_non_hispanic_or_latino_white_alone',
        'orig_percent_non_hispanic_black_alone',
@@ -101,6 +99,8 @@ INDEPENDENT_VARS = ['2002_2010_percent_upzoned', '2010_2018_percent_upzoned',
        'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min',
        'orig_square_meter_greenspace_coverage',
        'orig_feet_distance_from_park']
+
+EARLY_UPZONING = '2002_2010_percent_upzoned'
 
 
 DELTAS = [("2002", "2010"),("2010", "2018"), ("2010", "2014"), ("2014", "2018")]

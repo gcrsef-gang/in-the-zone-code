@@ -9,7 +9,7 @@ import sys
 import pandas as pd
 import semopy
 
-from .data import INDEPENDENT_VARS, DEPENDENT_VARS
+from .data import DENSIFICATION_MEASURES, CONTROL_VARS, DEPENDENT_VARS, EARLY_UPZONING
 from .util import log_transform, regress
 
 
@@ -38,6 +38,7 @@ MODEL_YEARS = {
 
 LOG_TRANSFORM_VARS = {
     # ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
+    # ModelName.LONG_TERM: ('d_2010_2018_square_meter_greenspace_coverage'),
     ModelName.LONG_TERM: ()
 }
 
@@ -63,7 +64,8 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
             model_data[var[4:]] = data[var[4:]]
             log_transform_vars.add(var[4:])
     model_data = model_data.dropna()
-    print(model_data, "after fit drop")
+    if verbose:
+        print(model_data, "after fit drop")
     if verbose:
         print("Log transforming: " + ", ".join(log_transform_vars), end="" + "... ")
         sys.stdout.flush()
@@ -91,19 +93,77 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
     return model
 
 
-def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, verbose=False
+# def get_description(model_name: ModelName, covariances: List[Tuple[str, str]]=[],
+#                     control_regressions: Dict[str, List[str]]={}, verbose=False
+#                         ) -> Tuple[str, Set[str]]:
+#     """Creates a semopy model description for one of three possible SEMs.
+
+#     Returns the description as a string as well as a set of all variable names.
+#     """
+#     relations = []
+#     variables = set()
+
+#     def _add_relation(var_names: List[str], operators: List[str]):
+#         """Adds a relation to the SEM description.
+
+#         There must be one fewer operator than there are variables.
+#         """
+#         operators = operators + [""]
+#         relation = []
+#         for var, operator in zip(var_names, operators):
+#             if var in LOG_TRANSFORM_VARS[model_name]:
+#                 relation.append("log_" + var)
+#                 variables.add("log_" + var)
+#             else:
+#                 relation.append(var)
+#                 variables.add(var)
+#             relation.append(operator)
+#         relations.append(" ".join(relation[:-1]))
+
+#     # Regressions
+#     num_examined_regressions = 0
+#     num_control_regressions = 0
+
+#     # Early upzoning into densification.
+#     for densification_var in DENSIFICATION_MEASURES:
+#         _add_relation([densification_var, EARLY_UPZONING], ["~"])
+#         num_examined_regressions += 1
+
+#     # Densification into dependent variables.
+#     for dep_var in DEPENDENT_VARS:
+#         _add_relation([dep_var, *DENSIFICATION_MEASURES], ["~"] + ["+"] * (len(CONTROL_VARS) - 1))
+#         num_examined_regressions += len(DENSIFICATION_MEASURES)
+
+#     # Controls.
+#     for dep_var, explanatory_vars in control_regressions.items():
+#         _add_relation([dep_var, *explanatory_vars], ["~"] + ["+"] * (len(explanatory_vars) - 1))
+#         num_control_regressions += len(explanatory_vars)
+
+#     # Covariances
+#     num_covariances = len(covariances)
+
+#     for var_1, var_2 in covariances:
+#         _add_relation([var_1, var_2], ["~~"])
+
+#     model_description = "\n".join(relations)
+
+#     if verbose:
+#         print(f"{num_examined_regressions=}")
+#         print(f"{num_control_regressions=}")
+#         print(f"{num_covariances=}")
+#         print(f"{variables=}")
+#         print(model_description)
+
+#     return model_description, variables
+
+
+def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, covariances: List[Tuple[str, str]]=[],
+                    control_regressions: Dict[str, List[str]]={}, verbose=False
                         ) -> Tuple[str, Set[str]]:
     """Creates a semopy model description for one of three possible SEMs.
 
     Returns the description as a string as well as a set of all variable names.
     """
-    start_yr, mid_yr, end_yr = MODEL_YEARS[model_name]
-    early_upzoning = model_type
-    print(early_upzoning, "early_upzoning")
-    # control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan", "d_2010_2018_pop_density", "d_2010_2018_resid_unit_density"]}
-    control_vars = {var for var in INDEPENDENT_VARS if var not in ["2002_2010_percent_upzoned","2002_2010_percent_upzoned_manhattan","2002_2010_percent_upzoned_non_manhattan"]}
-    # dependent_vars = {var for var in DEPENDENT_VARS}
-    dependent_vars = {var for var in DEPENDENT_VARS if var not in ["d_2010_2018_pop_density", "d_2010_2018_resid_unit_density"  ]}
     relations = []
     variables = set()
 
@@ -124,109 +184,39 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
             relation.append(operator)
         relations.append(" ".join(relation[:-1]))
 
-    # Latent variables
-    densification_indicators = [
-        f"d_{mid_yr}_{end_yr}_pop_density",
-        f"d_{mid_yr}_{end_yr}_resid_unit_density",
-        # f"d_{mid_yr}_{end_yr}_percent_multi_family_units"  # Provisional
-    ]
-    _add_relation(["densification"] + densification_indicators,
-                 ["=~"] + ["+"] * (len(densification_indicators) - 1))
-
     # Regressions
     num_examined_regressions = 0
     num_control_regressions = 0
-    for dep_var in DEPENDENT_VARS:
-        # Densification as an explanatory variable
-        if dep_var in densification_indicators:
-            continue
-        _add_relation([dep_var, "densification"], ["~"])
+
+    # Early upzoning into densification.
+    for densification_var in DENSIFICATION_MEASURES:
+        _add_relation([densification_var, EARLY_UPZONING], ["~"])
         num_examined_regressions += 1
-        # Controls for dependent variables
-        # maybe change so that densification indicators aren't getting controlled also?
-        for control in control_vars:
-            if abs(regress(dep_var, control, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-                _add_relation([dep_var, control], ["~"])
-                num_control_regressions += 1
 
-    # Later upzoning as a control for densificiation
-    _add_relation(["densification", f"{mid_yr}_{end_yr}_percent_upzoned"], ["~"])
-
-    # Early upzoning as an explanatory variable for densification
-    # early_upzoning = f"{start_yr}_{mid_yr}_percent_upzoned"
-    _add_relation(["densification", early_upzoning], ["~"])
-
-
-
-    _add_relation([f"d_{mid_yr}_{end_yr}_median_home_value", early_upzoning], ["~"])
-
-    # Add regressions between upzoning and dependent variables
+    # Densification into dependent variables.
     for dep_var in DEPENDENT_VARS:
-        if dep_var == f"d_{mid_yr}_{end_yr}_median_home_value" or dep_var in densification_indicators:
-            continue
-        if abs(regress(dep_var, early_upzoning, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-            _add_relation([dep_var, early_upzoning], ["~"])
-            num_examined_regressions += 1
+        _add_relation([dep_var, *DENSIFICATION_MEASURES], ["~"] + ["+"] * (len(CONTROL_VARS) - 1))
+        num_examined_regressions += len(DENSIFICATION_MEASURES)
 
-    dependent_regressions = []
-    for dep_var_1, dep_var_2 in itertools.combinations(DEPENDENT_VARS, 2):
-        if dep_var_1 in densification_indicators and dep_var_2 in densification_indicators:
-            continue
-        if dep_var_1 not in densification_indicators:
-            if abs(regress(dep_var_1, dep_var_2, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-                _add_relation([dep_var_1, dep_var_2], ["~"])
-                num_examined_regressions += 1
-                dependent_regressions.append((dep_var_1, dep_var_2))
-        if dep_var_2 not in densification_indicators:
-            if abs(regress(dep_var_2, dep_var_1, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-                _add_relation([dep_var_2, dep_var_1], ["~"])
-                num_examined_regressions += 1
-                dependent_regressions.append((dep_var_2, dep_var_1))
+    # Controls.
+    for dep_var in DEPENDENT_VARS:
+        significant_controls = [control for control in CONTROL_VARS
+                    if abs(regress(dep_var, control, data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD]
+        _add_relation([dep_var, *significant_controls], ["~"] + ["+"] * (len(CONTROL_VARS) - 1))
+        num_control_regressions += len(significant_controls)
 
-    num_control_regressions += 3
-    
     # Covariances
-
-    # Controls
-
-    # Remove controls not involved in regressions. 
-    # Note: does this actually do that? i see no indication that variables are actually being
-    # removed from control_vars. - jam
-    print(len(control_vars), "control vars pre removal")
-    control_vars = variables.intersection(control_vars)
-    print(len(control_vars), "control vars post removal")
-
-    # Add all controls for densification
-    for control in control_vars:
-        if control in densification_indicators or control == f"{mid_yr}_{end_yr}_percent_upzoned":
-            continue
-        print(control)
-        _add_relation(["densification", control], ["~"])
-
-
-    # Add covariances between controls
     num_covariances = 0
-    for var_1, var_2, in itertools.combinations(control_vars, 2):
+
+    for var_1, var_2 in itertools.combinations(CONTROL_VARS, 2):
         if abs(regress(var_1, var_2, data)[3]) < CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
         # _add_relation([var_1, var_2], ["~~"])
         # num_covariances += 1
 
-    # # Add covariances between densification indicators
-    # Commented out - could be causing problems with interactions between densification
-    # for var_1, var_2 in itertools.combinations(densification_indicators, 2):
-    #     _add_relation([var_1, var_2], ["~~"])
-    #     num_covariances += 1
-
-    # Add covariances between dependent variables
-
-    for var_1, var_2 in itertools.combinations(dependent_vars, 2):
-        if (var_1, var_2) in dependent_regressions or (var_2, var_1) in dependent_regressions:
-            continue
-        if var_1 in densification_indicators and var_2 in densification_indicators:
-            continue
-        if abs(regress(var_1, var_2, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+    for var_1, var_2 in itertools.combinations(DENSIFICATION_MEASURES, 2):
+        if abs(regress(var_1, var_2, data)[3]) < CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD:
             _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
         # _add_relation([var_1, var_2], ["~~"])
@@ -239,16 +229,12 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
                 _add_relation([densification_indicator, var], ["~~"])
                 num_covariances += 1
 
-    # Add covariances for upzoning and control variables
-    for var in control_vars:
-        if var in densification_indicators:
-            continue
-        if abs(regress(early_upzoning, var, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
-            _add_relation([early_upzoning, var], ["~~"])
+    for var_1, var_2 in itertools.combinations(DEPENDENT_VARS, 2):
+        if abs(regress(var_1, var_2, data)[3]) < DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD:
+            _add_relation([var_1, var_2], ["~~"])
             num_covariances += 1
         # _add_relation([early_upzoning, var], ["~~"])
         # num_covariances += 1
-
 
     model_description = "\n".join(relations)
 

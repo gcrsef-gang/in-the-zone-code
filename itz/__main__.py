@@ -101,7 +101,7 @@ def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: boo
     itz.make_sem_diagram(model_name, data, img_path, verbose)
 
 
-def _fit(model_string: str, model_type: str, model_path: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
+def _fit(model_string: str, model_type: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
     # TODO: figure out if semopy.efa.explore_cfa_model() is something worth exploring (see semopy documentation)
@@ -115,7 +115,8 @@ def _fit(model_string: str, model_type: str, model_path: str, data_path: str, ou
     print(data)
     if verbose:
         print("done!")
-    model = itz.fit(*itz.get_description(model_name, model_type_string, data, verbose), data, verbose)
+    model_description, variables = itz.get_description(model_name, model_type_string, data, verbose)
+    model = itz.fit(model_description, variables, data, verbose)
     # TODO: figure out how to save/load a model
     if cov_mat_path is not None:
         pd.DataFrame(model.calc_sigma()[0])
@@ -143,6 +144,8 @@ def _fit(model_string: str, model_type: str, model_path: str, data_path: str, ou
         # print(stats)
         # print(type(stats))
         # f.write(stats)
+    with open(os.path.join(output_path, "model_description.txt"), "w+") as f:
+        f.write(model_description)
     params.to_csv(os.path.join(output_path, "model_inspection.csv"))
     # factors.to_csv(os.path.join(output_path, "model_factors.csv"))
 
@@ -393,7 +396,6 @@ if __name__ == "__main__":
     fit_parser = subparsers.add_parser("fit")
     fit_parser.add_argument("model_string", choices=itz.model.MODEL_NAMES)
     fit_parser.add_argument("model_type", choices=itz.model.MODEL_TYPE_UPZONED_VARS)
-    fit_parser.add_argument("model_path")
     fit_parser.add_argument("data_path")
     fit_parser.add_argument("output_path")
     fit_parser.add_argument("--cov_mat_path", required=False)
