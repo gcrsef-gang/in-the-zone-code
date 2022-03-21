@@ -139,7 +139,8 @@ def make_histogram(x: str, data: pd.DataFrame, path: str, transformation=lambda 
     plt.clf()
     return {
         "mean": mean,
-        "stdev": stdev
+        "stdev": stdev,
+        "n": len(X)
     }
 
 
