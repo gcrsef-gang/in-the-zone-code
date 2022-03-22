@@ -44,7 +44,8 @@ VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned',
        'd_2010_2018_percent_car_commuters',
        'd_2010_2018_percent_public_transport_commuters',
        'd_2010_2018_percent_public_transport_trips_under_45_min',
-       'd_2010_2018_percent_car_trips_under_45_min', 'orig_pop_density',
+       'd_2010_2018_percent_car_trips_under_45_min', 
+       'orig_pop_density',
        'orig_percent_non_hispanic_or_latino_white_alone',
        'orig_percent_non_hispanic_black_alone',
        'orig_percent_hispanic_any_race',
@@ -61,7 +62,8 @@ VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned',
        'd_2010_2018_feet_distance_from_park','d_2010_2018_square_meter_greenspace_coverage',
        'orig_square_meter_greenspace_coverage', 'orig_feet_distance_from_park')
        
-DEPENDENT_VARS = ['d_2010_2018_resid_units',
+DEPENDENT_VARS = [
+        # 'd_2010_2018_resid_units',
        'd_2010_2018_per_capita_income',
        'd_2010_2018_percent_non_hispanic_or_latino_white_alone',
        'd_2010_2018_percent_non_hispanic_black_alone',
@@ -98,7 +100,10 @@ CONTROL_VARS = ['2010_2018_percent_upzoned',
        'orig_percent_public_transport_commuters',
        'orig_percent_public_transport_trips_under_45_min', 'orig_percent_car_trips_under_45_min',
        'orig_square_meter_greenspace_coverage',
-       'orig_feet_distance_from_park']
+       'orig_feet_distance_from_park', 
+       'orig_percent_residential',
+       'orig_percent_mixed_development',
+       'orig_percent_subsidized_properties']
 
 EARLY_UPZONING = '2002_2010_percent_upzoned'
 

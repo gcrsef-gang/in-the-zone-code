@@ -11,9 +11,9 @@ def effect_aggregator(dependent_var, independent_var, data, consider_nonsignific
         direct_effect = filtered_data[filtered_data["rval"] == independent_var]["Estimate"].astype(float).iloc[0]
     except IndexError:
         direct_effect = 0
-        
     filtered_data = filtered_data[filtered_data["rval"] != independent_var]
     print(filtered_data)
+    print("Independent to mediating estmate", "Mediating to dependent estimate", "Indirect effect", "Mediating variable")
     indirect_effects = 0
     for index, row in filtered_data.iterrows():
         if not consider_nonsignificant:
@@ -26,12 +26,11 @@ def effect_aggregator(dependent_var, independent_var, data, consider_nonsignific
         indirect_effect = indirect_data[indirect_data["rval"] == independent_var]["Estimate"]
         if len(indirect_effect) == 0:
             continue
-        print(indirect_effect.iloc[0], row["rval"])
+        print(indirect_effect.iloc[0], row["Estimate"], indirect_effect.iloc[0] * row["Estimate"], row["rval"])
         indirect_effects += indirect_effect.iloc[0] * row["Estimate"]
     print(f"Direct Effect of {independent_var} on {dependent_var}: {direct_effect}")
     print(f"Indirect Effects of {independent_var} on {dependent_var}: {indirect_effects}")
     print(f"Total Effects of {independent_var} on {dependent_var}: {direct_effect + indirect_effects}")
-
 
 def get_total_effect_dfs(inspection, x, y):
     regression_graph = {
@@ -40,7 +39,6 @@ def get_total_effect_dfs(inspection, x, y):
     for i, row in inspection.iterrows():
         if row["op"] == "~":
             regression_graph[row["rval"]].append((row["lval"], row["Estimate"]))
-
     visited = set()
     paths = set()
     current_path = []
@@ -63,9 +61,10 @@ def get_total_effect_dfs(inspection, x, y):
         visited.remove(u)
 
     _dfs_util(x)
-    print(f"{paths=}")
+    # print(f"{paths=}")
 
-    path_totals = set()
+    # path_totals = set()
+    path_totals = []
     for path in paths:
         path_total = 1
         for i, v in enumerate(path[1:], 1):
@@ -75,9 +74,16 @@ def get_total_effect_dfs(inspection, x, y):
                     w = weight
                     break
             path_total *= w
-        path_totals.add(path_total)
-
-    return sum(path_totals)
+        # path_totals.add(path_total)
+        path_totals.append([path, path_total])
+    path_totals = pd.DataFrame(path_totals, columns=["path", "estimate"])
+    abs_path_totals = path_totals["estimate"].apply(lambda x: abs(x))
+    path_totals["abs_estimate"] = abs_path_totals
+    path_totals.sort_values(by="abs_estimate", inplace=True, ascending=False)
+    path_totals.to_csv("test.csv")
+    print(path_totals)
+    print(path_totals.iloc[:,1].sum())
+    return path_totals.iloc[:,1].sum()
 
 
 if __name__ == "__main__":

@@ -69,6 +69,7 @@ Use -v for verbosity.
 """
 
 
+from statistics import mode
 from typing import Dict, List
 import argparse
 import json
@@ -101,7 +102,7 @@ def _make_diagram(model_string: str, data_path: str, img_path: str, verbose: boo
     itz.make_sem_diagram(model_name, data, img_path, verbose)
 
 
-def _fit(model_string: str, model_type: str, data_path: str, output_path:str, cov_mat_path: str, verbose: bool):
+def _fit(model_string: str, model_type: str, data_path: str, output_path:str, cov_mat_path: str, model_description: str, verbose: bool):
     """Fits a model to the data and prints evaluation metrics.
     """
     # TODO: figure out if semopy.efa.explore_cfa_model() is something worth exploring (see semopy documentation)
@@ -115,8 +116,22 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
     print(data)
     if verbose:
         print("done!")
-    model_description, variables = itz.get_description(model_name, model_type_string, data, verbose)
+
+    if model_description is not None:
+        model_description_df = pd.read_table(model_description, sep=" ")
+        variables = set(model_description_df.iloc[:,0]).union(set(model_description_df.iloc[:,2]))
+        with open(model_description, "r") as f:
+            model_description = f.read()
+    else:
+        model_description, variables = itz.get_description(model_name, model_type_string, data, verbose)
     print(model_description)
+    print(sorted(list(variables)))
+    try:
+        os.mkdir(output_path)
+    except FileExistsError:
+        pass
+    with open(os.path.join(output_path, "model_description.txt"), "w+") as f:
+        f.write(model_description)
 
     beginning_fit = time.time()
 
@@ -141,17 +156,11 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
     print(type(factors))
     for stat in stats.keys():
         stats[stat] = str(stats[stat])
-    try:
-        os.mkdir(output_path)
-    except FileExistsError:
-        pass
     with open(os.path.join(output_path, "model_stats.json"), "w") as f:
         json.dump(stats, f)
         # print(stats)
         # print(type(stats))
         # f.write(stats)
-    with open(os.path.join(output_path, "model_description.txt"), "w+") as f:
-        f.write(model_description)
     params.to_csv(os.path.join(output_path, "model_inspection.csv"))
     # factors.to_csv(os.path.join(output_path, "model_factors.csv"))
 
@@ -162,10 +171,10 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/4')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_both_model_diagram.png')}")
-    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
-    subprocess.run(["dot", os.path.join(output_path, "'report'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
+    # subprocess.run(["dot", os.path.join(output_path, "'report'/plots/1"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "model_diagram.png")])
+    # subprocess.run(["dot", os.path.join(output_path, "'report'/plots/2"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_estimation_model_diagram.png")])
+    # subprocess.run(["dot", os.path.join(output_path, "'report'/plots/3"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_covariances_model_diagram.png")])
+    # subprocess.run(["dot", os.path.join(output_path, "'report'/plots/4"), "-Tpng", "-Granksep=3", ">", os.path.join(output_path, "with_both_model_diagram.png")])
 
 def _make_histogram(x: str, data_path: str, img_path: str, transform: str, verbose: bool):
     """Visualize the distribution of a variable.
@@ -405,6 +414,7 @@ if __name__ == "__main__":
     fit_parser.add_argument("data_path")
     fit_parser.add_argument("output_path")
     fit_parser.add_argument("--cov_mat_path", required=False)
+    fit_parser.add_argument("--model_description", required=False)
     fit_parser.set_defaults(func=_fit)
 
     histogram_parser = subparsers.add_parser("distribute")
