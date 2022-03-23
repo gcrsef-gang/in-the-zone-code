@@ -11,7 +11,7 @@ import scipy
 
 
 # Value for shifting variables before log transformations. 
-LOG_TRANSFORM_SHIFT = 0.1
+LOG_TRANSFORM_SHIFT = 0.001
 RECIPROCAL_TRANSFORM_SHIFT = 0.001
 
 
@@ -74,7 +74,7 @@ def sqrt_transform(X: pd.Series) -> pd.Series:
     - All values are >= 0
     - No NaNs present in data
     """
-    return (X).transform(lambda x: math.pow(x, 0.5))*10
+    return (X).transform(lambda x: math.pow(x, 0.5))
 
 
 def get_data_linreg(x: str, y: str, data: pd.DataFrame, transformation_x=Transformations.identity, transformation_y=Transformations.identity

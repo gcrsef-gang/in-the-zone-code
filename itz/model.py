@@ -38,27 +38,27 @@ MODEL_YEARS = {
 
 LOG_TRANSFORM_VARS = {
     # ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
-    # ModelName.LONG_TERM: ('orig_square_meter_greenspace_coverage',
-    #     'orig_per_capita_income',
-    #     'orig_percent_mixed_development',
-    #     'orig_public_transit_trips_under_45_mins',
-    #     'orig_car_trips_under_45_mins',
-    #     'orig_pop_density',
-    #     'orig_resid_unit_density',
-    #     ),
-    ModelName.LONG_TERM: ()
+    ModelName.LONG_TERM: ('orig_square_meter_greenspace_coverage',
+        'orig_per_capita_income',
+        'orig_percent_mixed_development',
+        'orig_public_transit_trips_under_45_mins',
+        'orig_car_trips_under_45_mins',
+        'orig_pop_density',
+        'orig_resid_unit_density',
+        ),
+    # ModelName.LONG_TERM: ()
 }
 
 SQRT_TRANSFORM_VARS = {
     # ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
     # ModelName.LONG_TERM: ('d_2010_2018_square_meter_greenspace_coverage',
         # ''),
-    # ModelName.LONG_TERM: (
-    #     'orig_percent_non_hispanic_asian_alone',
-    #     'orig_percent_non_hispanic_black_alone',
-    #     'orig_percent_hispanic_any_race',
-    # )
-    ModelName.LONG_TERM: ()
+    ModelName.LONG_TERM: (
+        'orig_percent_non_hispanic_asian_alone',
+        'orig_percent_non_hispanic_black_alone',
+        'orig_percent_hispanic_any_race',
+    )
+    # ModelName.LONG_TERM: ()
 }
 # SQUARE_TRANSFORM_VARS = {
 #     # ModelName.LONG_TERM: ('2002_2010_percent_upzoned', '2010_2018_percent_upzoned')
@@ -85,18 +85,21 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
 
     model_data = pd.DataFrame()
     for var in variables:
+        print(var, var[5:])
         if var in data.columns:
             model_data[var] = data[var]
-        elif var[:4] == "log_":
+        elif var.startswith("log_"):
             model_data[var[4:]] = data[var[4:]]
             log_transform_vars.add(var[4:])
-        elif var[:4] == "square_":
-            model_data[var[4:]] = data[var[4:]]
-            square_transform_vars.add(var[4:])
-        elif var[:4] == "sqrt_":
-            model_data[var[4:]] = data[var[4:]]
-            sqrt_transform_vars.add(var[4:])
-    # model_data = model_data.dropna()
+        elif var[:4].startswith("square_"):
+            model_data[var[7:]] = data[var[7:]]
+            square_transform_vars.add(var[7:])
+        elif var.startswith("sqrt_"):
+            model_data[var[5:]] = data[var[5:]]
+            # sqrt_transform_vars.add(var[var.find("sqrt_")+5:])
+            sqrt_transform_vars.add(var[5:])
+            print("sqrt caught!")
+    model_data = model_data.dropna()
     if verbose:
         print(model_data, "after fit drop")
     if verbose:
@@ -106,8 +109,9 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
         model_data["log_" + var] = log_transform(model_data[var])
     for var in square_transform_vars:
         model_data["square_" + var] = square_transform(model_data[var])
-    for var in square_transform_vars:
+    for var in sqrt_transform_vars:
         model_data["sqrt_" + var] = sqrt_transform(model_data[var])
+        print(var, "sqrt_"+var)
     if verbose:
         print("done!")
 
@@ -116,7 +120,8 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
     if verbose:
         print("Constructing SEM model... ", end="")
         sys.stdout.flush()
-    model = semopy.Model(desc)
+    # model = semopy.Model(desc)
+    model = semopy.ModelMeans(desc)
     if verbose:
         print("done!")
 
@@ -216,7 +221,7 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
                 relation.append("log_" + var)
                 variables.add("log_" + var)
                 print("YOO!!", var)
-            if var in SQRT_TRANSFORM_VARS[model_name]:
+            elif var in SQRT_TRANSFORM_VARS[model_name]:
                 relation.append("sqrt_" + var)
                 variables.add("sqrt_" + var)
             else:

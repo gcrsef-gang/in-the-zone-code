@@ -4,6 +4,26 @@ import os
 
 import pandas as pd
 
+DEPENDENT_VARS = [
+        # 'd_2010_2018_resid_units',
+       'd_2010_2018_per_capita_income',
+       'd_2010_2018_percent_non_hispanic_or_latino_white_alone',
+       'd_2010_2018_percent_non_hispanic_black_alone',
+       'd_2010_2018_percent_hispanic_any_race',
+       'd_2010_2018_percent_non_hispanic_asian_alone',
+       'd_2010_2018_percent_multi_family_units',
+       'd_2010_2018_percent_occupied_housing_units',
+       'd_2010_2018_median_gross_rent', 'd_2010_2018_median_home_value',
+       'd_2010_2018_percent_households_with_people_under_18',
+       'd_2010_2018_percent_of_households_in_same_house_year_ago',
+       'd_2010_2018_percent_bachelor_degree_or_higher',
+       'd_2010_2018_percent_car_commuters',
+       'd_2010_2018_percent_public_transport_commuters',
+       'd_2010_2018_percent_public_transport_trips_under_45_min',
+       'd_2010_2018_percent_car_trips_under_45_min',
+    #    'd_2010_2018_feet_distance_from_park',
+       'd_2010_2018_square_meter_greenspace_coverage']
+
 def effect_aggregator(dependent_var, independent_var, data, consider_nonsignificant=True):
     filtered_data = data[data["lval"] == dependent_var]
     filtered_data = filtered_data[filtered_data["op"] == "~"]
@@ -81,6 +101,9 @@ def get_total_effect_dfs(inspection, x, y):
     path_totals["abs_estimate"] = abs_path_totals
     path_totals.sort_values(by="abs_estimate", inplace=True, ascending=False)
     path_totals.to_csv("test.csv")
+    for _, row in path_totals.iterrows():
+        print(str(row["path"])+" ", end=None)
+        print(row["estimate"])
     print(path_totals)
     print(path_totals.iloc[:,1].sum())
     return path_totals.iloc[:,1].sum()
@@ -91,7 +114,14 @@ if __name__ == "__main__":
     inspection = pd.read_csv(os.path.join(model_path, "model_inspection.csv"))
     independent_var = sys.argv[2]
     dependent_var = sys.argv[3]
+    # effect_aggregator(dependent_var, independent_var, inspection)
     get_total_effect_dfs(inspection, independent_var, dependent_var)
+    # for dependent_var in DEPENDENT_VARS:
+        # for independent_var in DEPENDENT_VARS:
+            # if independent_var == dependent_var:
+                # continue
+            # print(independent_var, dependent_var)
+            # get_total_effect_dfs(inspection, independent_var, dependent_var)
     # df = pd.DataFrame(columns=["lval", "op", "rval", "Estimate"], index=list(range(1, 9)))
     # df.loc[8] = pd.Series({"lval": "y", "op": "~", "rval": "x", "Estimate": 5})
     # df.loc[7] = pd.Series({"lval": "y", "op": "~", "rval": "c", "Estimate": 6})

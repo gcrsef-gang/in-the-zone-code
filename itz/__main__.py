@@ -162,6 +162,7 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
         # print(type(stats))
         # f.write(stats)
     params.to_csv(os.path.join(output_path, "model_inspection.csv"))
+    semopy.estimate_means(model).to_csv(os.path.join(output_path, "model_means.csv"))
     # factors.to_csv(os.path.join(output_path, "model_factors.csv"))
 
     # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
