@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Dict, List, Set, Tuple
 import itertools
 import sys
+import time
 
 import pandas as pd
 import semopy
@@ -85,7 +86,7 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
 
     model_data = pd.DataFrame()
     for var in variables:
-        print(var, var[5:])
+        # print(var, var[5:])
         if var in data.columns:
             model_data[var] = data[var]
         elif var.startswith("log_"):
@@ -98,7 +99,7 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
             model_data[var[5:]] = data[var[5:]]
             # sqrt_transform_vars.add(var[var.find("sqrt_")+5:])
             sqrt_transform_vars.add(var[5:])
-            print("sqrt caught!")
+            # print("sqrt caught!")
     model_data = model_data.dropna()
     if verbose:
         print(model_data, "after fit drop")
@@ -120,18 +121,20 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
     if verbose:
         print("Constructing SEM model... ", end="")
         sys.stdout.flush()
-    # model = semopy.Model(desc)
-    model = semopy.ModelMeans(desc)
+    model = semopy.Model(desc)
+    # model = semopy.ModelMeans(desc)
     if verbose:
         print("done!")
 
     if verbose:
         print("Fitting SEM to data... ", end="")
         sys.stdout.flush()
+    start_time = time.time()
     model.fit(model_data)
+    duration = time.time() - start_time
     # model.fit(model_data, obj='GLS')
     if verbose:
-        print("done!")
+        print(f"done! Model fitted in {duration // 60}m{round(duration, 1) % 60}s")
     return model
 
 

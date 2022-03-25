@@ -44,13 +44,19 @@ def effect_aggregator(dependent_var, independent_var, data, consider_nonsignific
 # SEARCH_DEPTH = 2
 
 
-def get_total_effect_dfs(inspection, x, y, output_path=None):
+def get_regression_graph(inspection):
     regression_graph = {
         var: [] for var in set(inspection["lval"]) | set(inspection["rval"])
     }
     for i, row in inspection.iterrows():
         if row["op"] == "~":
             regression_graph[row["rval"]].append((row["lval"], row["Estimate"], row["p-value"]))
+    return regression_graph
+
+
+def get_total_effect_dfs(inspection, x, y, output_path=None):
+    regression_graph = get_regression_graph(inspection)
+
     visited = set()
     paths = set()
     current_path = []
