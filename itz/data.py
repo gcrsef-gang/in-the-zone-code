@@ -23,10 +23,8 @@ SUBSIDIZED_PROPERTIES_PATH = "in-the-zone-data/subsidized_properties.csv"
 TRACTS_TO_LOTS_PATH = "in-the-zone-data/tracts-to-lots.json"
 
 VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned', 
-        '2002_2010_percent_upzoned_manhattan', '2002_2010_percent_upzoned_non_manhattan',
-        '2010_2014_percent_upzoned', '2010_2018_percent_upzoned',
-       '2014_2018_percent_upzoned', 'd_2010_2014_resid_units',
-       'd_2010_2018_resid_units', 'd_2014_2018_resid_units',
+        '2010_2018_percent_upzoned',
+       '2014_2018_percent_upzoned', 
        'orig_percent_residential',
        'orig_percent_mixed_development', 'orig_percent_subsidized_properties',
        'd_2010_2018_pop_density', 'd_2010_2018_resid_unit_density',
@@ -44,7 +42,7 @@ VAR_NAMES = ('all_vars', '2002_2010_percent_upzoned',
        'd_2010_2018_percent_car_commuters',
        'd_2010_2018_percent_public_transport_commuters',
        'd_2010_2018_percent_public_transport_trips_under_45_min',
-       'd_2010_2018_percent_car_trips_under_45_min', 
+       'd_2010_2018_percent_car_trips_under_45_min',
        'orig_pop_density',
        'orig_percent_non_hispanic_or_latino_white_alone',
        'orig_percent_non_hispanic_black_alone',
@@ -241,15 +239,15 @@ def get_data(lot_data: pd.DataFrame=None, tract_data: List[pd.DataFrame]=[],
     model_df.index.rename("ITZ_GEOID", inplace=True)
 
     
-    for index, row in model_df.iterrows():
-        if row["orig_percent_public_transport_trips_under_45_min"] < 0 or row["orig_percent_public_transport_trips_under_45_min"] > 100:
-            model_df.loc[index, "orig_percent_public_transport_trips_under_45_min"] = 0
-        if row["orig_percent_car_trips_under_45_min"] < 0 or row["orig_percent_car_trips_under_45_min"] > 100:
-            model_df.loc[index, "orig_percent_car_trips_under_45_min"] = 0
-        if row["d_2010_2018_percent_public_transport_trips_under_45_min"] < 0 or row["d_2010_2018_percent_public_transport_trips_under_45_min"] > 100:
-            model_df.loc[index, "d_2010_2018_percent_public_transport_trips_under_45_min"] = 0
-        if row["d_2010_2018_percent_car_trips_under_45_min"] < 0 or row["d_2010_2018_percent_car_trips_under_45_min"] > 100:
-            model_df.loc[index, "d_2010_2018_percent_car_trips_under_45_min"] = 0
+    # for index, row in model_df.iterrows():
+    #     if row["orig_percent_public_transport_trips_under_45_min"] < 0 or row["orig_percent_public_transport_trips_under_45_min"] > 100:
+    #         model_df.loc[index, "orig_percent_public_transport_trips_under_45_min"] = 0
+    #     if row["orig_percent_car_trips_under_45_min"] < 0 or row["orig_percent_car_trips_under_45_min"] > 100:
+    #         model_df.loc[index, "orig_percent_car_trips_under_45_min"] = 0
+    #     if row["d_2010_2018_percent_public_transport_trips_under_45_min"] < 0 or row["d_2010_2018_percent_public_transport_trips_under_45_min"] > 100:
+    #         model_df.loc[index, "d_2010_2018_percent_public_transport_trips_under_45_min"] = 0
+    #     if row["d_2010_2018_percent_car_trips_under_45_min"] < 0 or row["d_2010_2018_percent_car_trips_under_45_min"] > 100:
+    #         model_df.loc[index, "d_2010_2018_percent_car_trips_under_45_min"] = 0
     if verbose:
         print("Done!")
     # model_df.to_csv("itz-data.csv")
@@ -441,7 +439,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over']] \
                 / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']]
 
-            tract_df["percent_public_transport_trips_under_45_min"] = 100 * \
+            tract_df["percent_public_transport_trips_under_45_min"] =  \
                 (transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
@@ -449,9 +447,9 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
-                / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
+                # / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
             
-            tract_df["percent_car_trips_under_45_min"] = 100 * \
+            tract_df["percent_car_trips_under_45_min"] = 0.5 * \
                 (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
@@ -466,10 +464,10 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work at home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
-                / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
-                 transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
+                # / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
+                #  transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
         elif year == "2019":
-            tract_df["percent_car_commuters"] = 100 * \
+            tract_df["percent_car_commuters"] = \
                 (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over']].astype(float) + transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over']].astype(float)) \
                 / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']].astype(float)
 
@@ -477,7 +475,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over']] \
                 / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']]
 
-            tract_df["percent_public_transport_trips_under_45_min"] = 100 * \
+            tract_df["percent_public_transport_trips_under_45_min"] = \
                 (transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
@@ -485,9 +483,9 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
-                / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
+                # / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
             
-            tract_df["percent_car_trips_under_45_min"] = 100 * \
+            tract_df["percent_car_trips_under_45_min"] = 0.5 * \
                 (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
@@ -502,8 +500,8 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over who did not work from home!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
-                / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
-                 transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
+                # / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
+                #  transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
         else:
             tract_df["percent_car_commuters"] = 100 * \
                 (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over']].astype(float) + \
@@ -514,7 +512,7 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over']] \
                 / transportation[code_to_column['Estimate!!Total!!Workers 16 years and over']]
 
-            tract_df["percent_public_transport_trips_under_45_min"] = 100 * \
+            tract_df["percent_public_transport_trips_under_45_min"] = \
                 (transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!25 to 29 minutes']].astype(float) + \
@@ -522,9 +520,9 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Public transportation (excluding taxicab)!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
-                / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
+                # / transportation[code_to_column["Estimate!!Public transportation (excluding taxicab)!!Workers 16 years and over"]].astype(float)
             
-            tract_df["percent_car_trips_under_45_min"] = 100 * \
+            tract_df["percent_car_trips_under_45_min"] = 0.5 * \
                 (transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!35 to 44 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!30 to 34 minutes']].astype(float) + \
                 transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!TRAVEL TIME TO WORK!!25 to 29 minutes"]].astype(float) + \
@@ -539,8 +537,8 @@ def _get_tract_data() -> List[pd.DataFrame]:
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!15 to 19 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!10 to 14 minutes']].astype(float) + \
                 transportation[code_to_column['Estimate!!Car, truck, or van -- carpooled!!TRAVEL TIME TO WORK!!Less than 10 minutes']].astype(float)) \
-                / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
-                 transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
+                # / (transportation[code_to_column["Estimate!!Car, truck, or van -- drove alone!!Workers 16 years and over"]].astype(float) + \
+                #  transportation[code_to_column["Estimate!!Car, truck, or van -- carpooled!!Workers 16 years and over"]].astype(float))
 
         del transportation
 

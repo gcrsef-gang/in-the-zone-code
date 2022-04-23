@@ -2,7 +2,10 @@ import math
 import sys
 import os
 
+import json
 import pandas as pd
+
+from itz.data import VAR_NAMES
 
 DEPENDENT_VARS = [
         # 'd_2010_2018_resid_units',
@@ -52,13 +55,7 @@ def effect_aggregator(dependent_var, independent_var, data, consider_nonsignific
     print(f"Indirect Effects of {independent_var} on {dependent_var}: {indirect_effects}")
     print(f"Total Effects of {independent_var} on {dependent_var}: {direct_effect + indirect_effects}")
 
-def get_total_effect_dfs(inspection, x, y):
-    regression_graph = {
-        var: [] for var in set(inspection["lval"]) | set(inspection["rval"])
-    }
-    for i, row in inspection.iterrows():
-        if row["op"] == "~":
-            regression_graph[row["rval"]].append((row["lval"], row["Estimate"]))
+def get_total_effect_dfs(regression_graph, x, y):
     visited = set()
     paths = set()
     current_path = []
@@ -66,6 +63,7 @@ def get_total_effect_dfs(inspection, x, y):
     def _dfs_util(u):
         """Returns the set of path sums discovered.
         """
+        print(current_path)
         if u in visited:
             return
         visited.add(u)
@@ -76,11 +74,17 @@ def get_total_effect_dfs(inspection, x, y):
             current_path.pop()
             return
         for v, _ in regression_graph[u]:
-            _dfs_util(v)
+            if v not in visited:
+                _dfs_util(v)
+                try:
+                    visited.pop(v)
+                except:
+                    pass
         current_path.pop()
         visited.remove(u)
 
     _dfs_util(x)
+    print("dfs created!")
     # print(f"{paths=}")
 
     # path_totals = set()
@@ -110,18 +114,37 @@ def get_total_effect_dfs(inspection, x, y):
 
 
 if __name__ == "__main__":
-    model_path = sys.argv[1]
+    mode = sys.argv[1]
+    model_path = sys.argv[2]
     inspection = pd.read_csv(os.path.join(model_path, "model_inspection.csv"))
-    independent_var = sys.argv[2]
-    dependent_var = sys.argv[3]
-    # effect_aggregator(dependent_var, independent_var, inspection)
-    get_total_effect_dfs(inspection, independent_var, dependent_var)
-    # for dependent_var in DEPENDENT_VARS:
-        # for independent_var in DEPENDENT_VARS:
-            # if independent_var == dependent_var:
-                # continue
-            # print(independent_var, dependent_var)
-            # get_total_effect_dfs(inspection, independent_var, dependent_var)
+    regression_graph = {
+        var: [] for var in set(inspection["lval"]) | set(inspection["rval"])
+    }
+    for i, row in inspection.iterrows():
+        if row["op"] == "~":
+            regression_graph[row["rval"]].append((row["lval"], row["Estimate"]))
+    if mode == "all":
+        output = sys.argv[3]
+        results = {}
+        for dependent_var in DEPENDENT_VARS:
+            dep_results = {}
+            for independent_var in VAR_NAMES:
+                if independent_var == "all_vars":
+                    continue
+                if independent_var == dependent_var:
+                    continue
+                print(independent_var, dependent_var)
+                sum = get_total_effect_dfs(regression_graph, independent_var, dependent_var)
+                if sum != 0:
+                    dep_results[independent_var] = sum
+            results[dependent_var] = dep_results
+        with open(output, "w") as f:
+            json.dump(results, f, indent=4)
+    elif mode == "one":
+        independent_var = sys.argv[3]
+        dependent_var = sys.argv[4]
+        # effect_aggregator(dependent_var, independent_var, inspection)
+        get_total_effect_dfs(regression_graph, independent_var, dependent_var)
     # df = pd.DataFrame(columns=["lval", "op", "rval", "Estimate"], index=list(range(1, 9)))
     # df.loc[8] = pd.Series({"lval": "y", "op": "~", "rval": "x", "Estimate": 5})
     # df.loc[7] = pd.Series({"lval": "y", "op": "~", "rval": "c", "Estimate": 6})

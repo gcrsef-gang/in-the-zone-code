@@ -31,7 +31,8 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str,
     print(transformation_x, transformation_x)
 
     slope, intercept, r, two_tailed_p, r_squared, _ = regress(x, y, data, transformation_x, transformation_y)
-
+    # slope = -188
+    # intercept = 7865.1
     plt.plot(X, (slope * np.asarray(X) + intercept), '-r')
 
     if transformation_x:
@@ -131,9 +132,12 @@ def make_residual_plot(x: str, y: str, data: pd.DataFrame, path: str,
 def make_histogram(x: str, data: pd.DataFrame, path: str, transformation=lambda x: x):
     """"Creates a histogram and returns descriptive statistics as a dictionary.
     """
+    print(data[x])
     X = (data[x][data[x].notnull()]).transform(transformation)
     mean, stdev = X.mean(), X.std()
-    plt.hist(X, bins=1000)
+    print(X[X > 100])
+    plt.hist(X, bins=200)
+    # plt.hist(X, bins=20)
     plt.title(f"{x}  Mean: {round(mean, 3)}  Stdev: {round(stdev, 3)}")
     plt.savefig(path)
     plt.clf()

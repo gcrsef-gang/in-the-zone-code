@@ -113,7 +113,7 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
         sys.stdout.flush()
     data = pd.read_csv(data_path)
     data = data[~data[model_type_string].isna()]
-    print(data)
+    print(f"Data length: {len(data)}")
     if verbose:
         print("done!")
 
@@ -124,8 +124,8 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
             model_description = f.read()
     else:
         model_description, variables = itz.get_description(model_name, model_type_string, data, verbose)
-    print(model_description)
-    print(sorted(list(variables)))
+    # print(model_description)
+    # print(sorted(list(variables)))
     try:
         os.mkdir(output_path)
     except FileExistsError:
@@ -150,14 +150,14 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
         print("done!")
     _print_stats(stats)
     print(params)
-
-    factors = model.predict_factors(data)
-    print(factors)
-    print(type(factors))
+    print(f"Output path: {output_path}")
+    # factors = model.predict_factors(data)
+    # print(factors)
+    # print(type(factors))
     for stat in stats.keys():
         stats[stat] = str(stats[stat])
-    with open(os.path.join(output_path, "model_stats.json"), "w") as f:
-        json.dump(stats, f)
+    # with open(os.path.join(output_path, "model_stats.json"), "w") as f:
+        # json.dump(stats, f)
         # print(stats)
         # print(type(stats))
         # f.write(stats)
@@ -168,6 +168,9 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
     # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
     # TODO: learn more about robust p-values (see semopy FAQ)
     semopy.report(model, "report", output_path)
+    with open(os.path.join(output_path, "model_stats.txt"), "w") as f:
+        for stat, item in stats.items():
+            f.write(stat + ": " + item + "\n")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
