@@ -78,7 +78,8 @@ DEPENDENT_VARS = [
        'd_2010_2018_percent_public_transport_trips_under_45_min',
        'd_2010_2018_percent_car_trips_under_45_min',
     #    'd_2010_2018_feet_distance_from_park',
-       'd_2010_2018_square_meter_greenspace_coverage']
+       'd_2010_2018_square_meter_greenspace_coverage'
+    ]
 
 DENSIFICATION_MEASURES = ['d_2010_2018_pop_density', 'd_2010_2018_resid_unit_density']
 

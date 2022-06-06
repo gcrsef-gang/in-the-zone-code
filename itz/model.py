@@ -19,7 +19,7 @@ DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 1
 # CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.01
 CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.05
 # REGRESSION_SIGNIFICANCE_THRESHOLD = 0.01
-REGRESSION_SIGNIFICANCE_THRESHOLD = 0.01
+REGRESSION_SIGNIFICANCE_THRESHOLD = 0.25
 
 
 class ModelName(Enum):
@@ -100,7 +100,7 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
             # sqrt_transform_vars.add(var[var.find("sqrt_")+5:])
             sqrt_transform_vars.add(var[5:])
             # print("sqrt caught!")
-    model_data = model_data.dropna()
+    # model_data = model_data.dropna()
     if verbose:
         print(model_data, "after fit drop")
     if verbose:
@@ -130,11 +130,11 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
         print("Fitting SEM to data... ", end="")
         sys.stdout.flush()
     start_time = time.time()
-    model.fit(model_data)
+    # model.fit(model_data)
+    model.fit(model_data, obj='FIML')
     duration = time.time() - start_time
-    # model.fit(model_data, obj='GLS')
     if verbose:
-        print(f"done! Model fitted in {duration // 60}m{round(duration, 1) % 60}s")
+        print(f"done! Model fitted in {duration // 60}m {round(duration, 1) % 60}s")
     return model
 
 
@@ -324,9 +324,9 @@ def get_description(model_name: ModelName, model_type: str, data: pd.DataFrame, 
     for var in CONTROL_VARS:
         if "2010_2018_percent_upzoned" == var:
             continue
-        # if abs(regress(var, "2010_2018_percent_upzoned", data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
-        _add_relation(["2010_2018_percent_upzoned", var], ["~"])
-        regressions.append(["2010_2018_percent_upzoned", var])
+        if abs(regress(var, "2010_2018_percent_upzoned", data)[3]) < REGRESSION_SIGNIFICANCE_THRESHOLD:
+            _add_relation(["2010_2018_percent_upzoned", var], ["~"])
+            regressions.append(["2010_2018_percent_upzoned", var])
 
     # Covariances
     # num_covariances = 0

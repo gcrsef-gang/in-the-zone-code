@@ -3,7 +3,7 @@ import os
 
 import pandas as pd
 
-def filter_model_description(model_path, output_path, threshold=0.2):
+def filter_model_description(model_path, output_path, threshold=0.05):
     model_inspection = pd.read_csv(os.path.join(model_path, "model_inspection.csv"))
     filtered_model_inspection = []
     rejected = []
@@ -33,9 +33,12 @@ def filter_model_description(model_path, output_path, threshold=0.2):
 
 if __name__ == "__main__":
     model_path = sys.argv[1]
-    output_path = sys.argv[2]
-    if len(sys.argv) > 3:
-        threshold = sys.argv[3]
-        filter_model_description(model_path, output_path, threshold)
+    if len(sys.argv) > 2:
+        output_path = sys.argv[2]
+        if len(sys.argv) > 3:
+            threshold = sys.argv[3]
+            filter_model_description(model_path, output_path, threshold)
+        else:
+            filter_model_description(model_path, output_path)
     else:
-        filter_model_description(model_path, output_path)
+        filter_model_description(model_path, model_path+".txt")
