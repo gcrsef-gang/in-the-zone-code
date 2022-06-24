@@ -161,16 +161,18 @@ def _fit(model_string: str, model_type: str, data_path: str, output_path:str, co
         # print(stats)
         # print(type(stats))
         # f.write(stats)
+    with open(os.path.join(output_path, "model_stats.txt"), "w") as f:
+        for stat, item in stats.items():
+            f.write(stat + ": " + item + "\n")
     params.to_csv(os.path.join(output_path, "model_inspection.csv"))
+    print("model inspection created!")
     semopy.estimate_means(model).to_csv(os.path.join(output_path, "model_means.csv"))
     # factors.to_csv(os.path.join(output_path, "model_factors.csv"))
 
     # semopy.semplot(model, os.path.join(output_path, "model_diagram.png"))
     # TODO: learn more about robust p-values (see semopy FAQ)
     semopy.report(model, "report", output_path)
-    with open(os.path.join(output_path, "model_stats.txt"), "w") as f:
-        for stat, item in stats.items():
-            f.write(stat + ": " + item + "\n")
+    print("report crerated!")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/1')} -Tpng -Granksep=3 > {os.path.join(output_path, 'model_diagram.png')}")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/2')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_estimation_model_diagram.png')}")
     # subprocess.run(f"dot {os.path.join(output_path, 'report/plots/3')} -Tpng -Granksep=3 > {os.path.join(output_path, 'with_covariances_model_diagram.png')}")
@@ -301,7 +303,7 @@ def _make_regression(x, y, data_path, regression_plot_path, residual_plot_path, 
                 transformation_y = itz.util.Transformations.__dict__[transform_y]
             else:
                 transformation_y = lambda x: x
-            regression_stats = itz.make_regression_plot(x, y_column, data, image_path, transformation_x, transformation_y)
+            regression_stats = itz.make_regression_plot(x, y, data, image_path, transformation_x, transformation_y)
     if residual_plot_path:
         if transform_x:
             transformation_x = itz.util.Transformations.__dict__[transform_x]

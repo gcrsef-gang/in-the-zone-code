@@ -44,6 +44,7 @@ def make_regression_plot(x: str, y: str, data: pd.DataFrame, path: str,
     else:
         plt.ylabel(y)
 
+    # plt.figure(figsize=(10, 40))
     plt.scatter(X, Y)
     plt.title(f"R^2: {round(r_squared, 3)} r: {round(r, 3)} p: {round(two_tailed_p, 5)}"
               f"Num Obsv: {len(X)}")
@@ -133,12 +134,20 @@ def make_histogram(x: str, data: pd.DataFrame, path: str, transformation=lambda 
     """"Creates a histogram and returns descriptive statistics as a dictionary.
     """
     print(data[x])
+    print(data.columns)
+    # subdata = data[data["2002_2010_percent_upzoned"] < 50]
+    # superdata = data[data["2002_2010_percent_upzoned"] > 50]
     X = (data[x][data[x].notnull()]).transform(transformation)
+    # Y = (subdata[x][subdata[x].notnull()]).transform(transformation)
+    # Z = (superdata[x][superdata[x].notnull()]).transform(transformation)
     mean, stdev = X.mean(), X.std()
+    # print(Y.mean(), Z.mean())
     print(X[X > 100])
-    plt.hist(X, bins=200)
+    plt.hist(X, bins=100)
+    # plt.hist(Y, bins=200)
+    # plt.hist(Z, bins=200)
     # plt.hist(X, bins=20)
-    plt.title(f"{x}  Mean: {round(mean, 3)}  Stdev: {round(stdev, 3)}")
+    plt.title(f"{x} M: {round(mean, 3)} S: {round(stdev, 3)}")
     plt.savefig(path)
     plt.clf()
     return {
@@ -177,7 +186,7 @@ def make_map_vis(geoset: dict, data: pd.DataFrame, path: str, columns: List[str]
     # print(len(geoset['features']))
     for column in columns[1:]:
         if "upzoned" in column:
-            bins = [0,0.1, 1,3,5,10,25,100]
+            bins = [0,0.1,5,10,25,50,75,90,95,100]
         else:
             bins = list(data[column].quantile([0, .25, .5, .75, 1]))
         # bins.append(0)

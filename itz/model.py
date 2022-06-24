@@ -19,7 +19,7 @@ DEPENDENT_VARIABLE_COVARIANCE_SIGNIFICANCE_THRESHOLD = 1
 # CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.01
 CONTROL_COVARIANCE_SIGNIFICANCE_THRESHOLD = 0.05
 # REGRESSION_SIGNIFICANCE_THRESHOLD = 0.01
-REGRESSION_SIGNIFICANCE_THRESHOLD = 0.25
+REGRESSION_SIGNIFICANCE_THRESHOLD = 0.5
 
 
 class ModelName(Enum):
@@ -69,8 +69,8 @@ SQRT_TRANSFORM_VARS = {
 # }
 
 MODEL_TYPE_UPZONED_VARS = {
-    "MANHATTAN" : "2002_2010_percent_upzoned_manhattan",
-    "NON_MANHATTAN" : "2002_2010_percent_upzoned_non_manhattan",
+    # "MANHATTAN" : "2002_2010_percent_upzoned_manhattan",
+    # "NON_MANHATTAN" : "2002_2010_percent_upzoned_non_manhattan",
     "UNIFIED" : "2002_2010_percent_upzoned",
 }
 
@@ -100,7 +100,11 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
             # sqrt_transform_vars.add(var[var.find("sqrt_")+5:])
             sqrt_transform_vars.add(var[5:])
             # print("sqrt caught!")
+    # model_data.index = data["ITZ_GEOID"]
+    # print(data.index)
+    model_data = model_data[model_data["orig_pop_density"] > 0]
     # model_data = model_data.dropna()
+    model_data.to_csv("in-the-zone-data/all-data-integrated-itz-data.csv")
     if verbose:
         print(model_data, "after fit drop")
     if verbose:
@@ -130,8 +134,8 @@ def fit(desc: str, variables: Set[str], data: pd.DataFrame, verbose=False) -> se
         print("Fitting SEM to data... ", end="")
         sys.stdout.flush()
     start_time = time.time()
-    # model.fit(model_data)
-    model.fit(model_data, obj='FIML')
+    model.fit(model_data)
+    # model.fit(model_data, obj='FIML')
     duration = time.time() - start_time
     if verbose:
         print(f"done! Model fitted in {duration // 60}m {round(duration, 1) % 60}s")
